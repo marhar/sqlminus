@@ -3,8 +3,6 @@
 OraPIG -- Oracle Python Interface Generator
 ===========================================
 
-.. TODO: for this doc, rearrange sections, label as beta version, note TODO items.
-
 OraPIG creates Python interfaces for PL/SQL packages.
 You can generate interfaces for your own packages or for the
 Oracle system packages.
@@ -14,10 +12,10 @@ Quick Start
 
 Suppose you have a package called *tiny* with a single procedure *p*::
 
-  create or replace package tiny
-  as
-      procedure p(x in number);
-  end tiny;
+    create or replace package tiny
+    as
+        procedure p(x in number);
+    end tiny;
 
 OraPIG will generate a wrapper class that will allow you to
 use the package without having to use the various database
@@ -57,15 +55,15 @@ Put the package docstring comment between the "create"
 and "as" lines.  Put each procedure's or function's docstring
 comments immediately preceding the declaration::
 
-  create or replace package tiny
-  --+ tiny : tiny example package
-  --+ it's a really tiny package
-  as
-      --+ p(x) - some random procedure
-      --+ parms:
-      --+  x : some number
-      procedure p(x in number);
-  end tiny;
+    create or replace package tiny
+    --+ tiny : tiny example package
+    --+ it's a really tiny package
+    as
+        --+ p(x) - some random procedure
+        --+ parms:
+        --+  x : some number
+        procedure p(x in number);
+    end tiny;
 
 Committing Transactions
 -----------------------
@@ -115,11 +113,11 @@ Reference Cursors
 Oracle has a "reference cursor" type which acts an an iterator
 over a data set returned by a SQL query::
 
-  open mycursor for select * from people;
+    open mycursor for select * from people;
 
 The reference cursor can be returned from a PL/SQL function::
 
-  return mycursor;
+    return mycursor;
 
 In your Python program, you can then use this returned reference
 cursor to iterate over the rows returned from the query.  Suppose
@@ -162,8 +160,7 @@ associated Python data types.
 Note that cx_Oracle provides appropriate classes to represent most
 Oracle data types.  OraPIG generates the appropriate code when
 necessary to convert between the cx_Oracle types and the standard
-Python types, reducing dependencies between your software and the
-cx_Oracle package.
+Python types.
 
 Here are the type mappings::
 
@@ -175,25 +172,24 @@ Here are the type mappings::
     CURSOR        CURSOR
     VARCHAR2      STRING
     TIMESTAMP     TIMESTAMP
+    BLOB          BLOB
+    CLOB          CLOB
 
-(datatype mapping is an ongoing project... please let us know if
-you have any problems, ideas, suggestions, questions, etc.)
-
-.. TODO: types in src, let's confirm these and make sure they are covered
-   in test cases::
+Datatype mapping is an ongoing project... here's a few types that
+are coded, but that I don't use.  Let me know if
+you have any problems, ideas, suggestions, questions, etc.
 
         'RAW'                   :'BINARY',
         'BFILE'                 :'BFILE',
-        'BLOB'                  :'BLOB',
-        'CLOB'                  :'CLOB',
         'CHAR'                  :'FIXED_CHAR',
         'unhandled_LONG_BINARY' :'LONG_BINARY',
         'unhandled_LONG_STRING' :'LONG_STRING',
         'unhandled_NCLOB'       :'NCLOB',
         'unhandled_OBJECT'      :'OBJECT',
 
-.. TODO: these are the errors from running on sys pkgs. let's test
-   and either fix or document that they don't work::
+These are the data types that receive errors when compiling all
+the systems packges.  Again, let me know which ones you might
+need coverage for.
 
     KeyError: 'argtype'
     KeyError: 'BINARY_DOUBLE'
@@ -220,14 +216,10 @@ Arrays
 PL/SQL supports an array data type.  This can be used to enhance
 efficiency or better reflect your application's logical interface.
 
-.. TODO: more verbiage on arrays
-
 Example: keywords
 
 Suppose you have a package that manipulates keywords that has a *set_keyword*
 procedure.
-
-.. TODO: show procedure body
 
 To set a number of keywords on an identifier, you could
 repeatedly call the procedure::
@@ -272,34 +264,33 @@ all be placed in the same output file.
 
 The command line options are::
 
---help, -h                   show this help message and exit
---conn=CONN, -C CONN         database connection string (required)
---output=OUTPUT, -O OUTPUT   output file, defaults to stdout
---doc=DOCFILE                output document to this file (not implemented)
---lang=LANG                  language binding (currently wishful thinking)
---pass=PASS, -P PASS         database password (not implemented)
---dump                       dump parsed data (for debugging)
---sys                        the connection is a sys account
+    --help, -h                   show this help message and exit
+    --conn=CONN, -C CONN         database connection string (required)
+    --output=OUTPUT, -O OUTPUT   output file, defaults to stdout
+    --doc=DOCFILE                output document to this file (not implemented)
+    --lang=LANG                  language binding (currently wishful thinking)
+    --pass=PASS, -P PASS         database password (not implemented)
+    --dump                       dump parsed data (for debugging)
+    --sys                        the connection is a sys account
 
 Platform Considerations
 -----------------------
 
-We've run this primarily on Linux.  There's no reason it
-shouldn't run in any other environment (e.g. Windows, Mac) where cx_Oracle
+I've run this primarily on Linux and Mac.  There's no reason it
+shouldn't run in any other environment (e.g. Windows) where cx_Oracle
 is supported.  If you can verify a platform, please let us know and
-we'll update it here.
+I'll update it here.
 
 Administrivia
 -------------
 :Version:
-    1.0
+    1.1
 :Download:
     http://code.google.com/p/orapig
 :Documentation:
     http://markharrison.net/orapig
 :Authors:
-    Mark Harrison (mh@pixar.com)
-
+    Mark Harrison (marhar@gmail.com)
     Bjorn Leffler (bjorn@pixar.com)
 :License:
     Copyright 2008 Pixar, available under a BSD license.
@@ -314,8 +305,6 @@ Administrivia
     an appropriate directory.
 :Motto:
     "There's a Snake in my Oracle!"
-
-This has been tested with Python 2.3 and 2.4, and Oracle 10.2.1.
 
 Thanks
 ------
