@@ -19,3 +19,5 @@ All of these packages use Python and the excellent cx_Oracle package.
 
 - [Installing cx_Oracle on Mac](https://github.com/marhar/sqlminus/tree/master/docs/mac-install.md)
 - [Sample packages used in this documentation](https://github.com/marhar/sqlminus/tree/master/docs/sample-packages.md)
+
+(testing zen mode)
