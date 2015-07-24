@@ -213,15 +213,14 @@ The usage of OraPIG Configomat is::
 
 The command line options are::
 
---help, -h                   show this help message and exit
---conn=CONN, -C CONN         database connection string (required)
---table=TABLENAME            generate bindings for this table (required)
---lang=LANG                  language binding (currently gperf or python)
---output=OUTPUT, -O OUTPUT   output file, defaults to stdout
---pass=PASS, -P PASS         database password (not implemented)
---header=file, -H file       generate C/C++ header file
-
---dump                       dump parsed data and exit (for debugging)
+    --help, -h                   show this help message and exit
+    --conn=CONN, -C CONN         database connection string (required)
+    --table=TABLENAME            generate bindings for this table (required)
+    --lang=LANG                  language binding (currently gperf or python)
+    --output=OUTPUT, -O OUTPUT   output file, defaults to stdout
+    --pass=PASS, -P PASS         database password (not implemented)
+    --header=file, -H file       generate C/C++ header file
+    --dump                       dump parsed data and exit (for debugging)
 
 Example Makefile
 ================
@@ -261,31 +260,31 @@ Administrivia
 
 Configomat is part of OraPIG, the Oracle Python Interface Generator.
 
-:Version:
-    1.0
-:Download:
-    http://code.google.com/p/orapig
-:Documentation:
-    http://markharrison.net/orapig
-:Author:
-    Mark Harrison (mh@pixar.com)
-:License:
-    Copyright 2008 Pixar, available under a BSD license.
-:Support:
-    Send questions to the cx_Oracle mailing list.  There's a
-    link at: http://python.net/crew/atuining/cx_Oracle
-:Dependencies:
-    cx_Oracle, the Python interface for Oracle:
-    http://python.net/crew/atuining/cx_Oracle
-    The C/C++ language binding uses gperf, the gnu perfect hash generator:
-    http://www.gnu.org/software/gperf
-:Installation:
-    Configomat is a standalone script.  Edit the #! line and put in
-    an appropriate path.
-:OraPIG Motto:
-    "There's a Snake in my Oracle!"
+    :Version:
+        1.0
+    :Download:
+        http://code.google.com/p/orapig
+    :Documentation:
+        http://markharrison.net/orapig
+    :Author:
+        Mark Harrison (mh@pixar.com)
+    :License:
+        Copyright 2008 Pixar, available under a BSD license.
+    :Support:
+        Send questions to the cx_Oracle mailing list.  There's a
+        link at: http://python.net/crew/atuining/cx_Oracle
+    :Dependencies:
+        cx_Oracle, the Python interface for Oracle:
+        http://python.net/crew/atuining/cx_Oracle
+        The C/C++ language binding uses gperf, the gnu perfect hash generator:
+        http://www.gnu.org/software/gperf
+    :Installation:
+        Configomat is a standalone script.  Edit the #! line and put in
+        an appropriate path.
+    :OraPIG Motto:
+        "There's a Snake in my Oracle!"
 
-This has been tested with Python 2.3 and 2.4, and Oracle 10.2.1.
+This has been tested with Python 2.3-2.7 and Oracle 10-11.
 
 Thanks
 ======
@@ -297,13 +296,6 @@ Thanks
 - Douglas C. Schmidt and the rest of the gperf contributors.
 - Joy Sikorski, who taught me how to draw a cute pig.  Visit her
   site and unlock your creativity! http://www.joysikorski.com
-
-FAQs
-====
-
-1.  question
-
-    answer
 
 TODO
 ====
