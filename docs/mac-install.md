@@ -2,26 +2,32 @@ Installing cx_Oracle and sqlminus on MacOS
 ==========================================
 
 - This documents how I got Oracle and Python working together on my Mac.
+- I had problems using pip to install pre-built packages, so this is a
+  source build.  Download the free xcode package from Apple to get the compiler.
 - Version numbers may drift; adust accordingly.
 
 Set Up a Build Area
 ===================
 
-For example, suppose the top level build/install directory will be
-/Users/mh/p/cx.
+As per typical Unix builds, everything will be installed under one top-level
+directory.  In addition we'll store the distribution files and build the
+source there as well.
 
-    export TOP=/Users/mh/p/cx
-    mkdir -p $TOP/dist        # collect the install files here
-    mkdir -p $TOP/src         # build things here
-    export PATH=$TOP/bin:$PATH
+
+    export TOP=/Users/mh/p/cx  # where I built and installed while writing this doc
+    mkdir -p $TOP/dist         # collect the install files here
+    mkdir -p $TOP/src          # build things here
+    export PATH=$TOP/bin:$PATH # not necessary, but convenient for testing
 
 Downloads
 =========
 
-Put them all in $TOP/dist
+Put these all in $TOP/dist
 
 Oracle Instantclient 11
 -----------------------
+
+You need a free Oracle account to download these.
 
     http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html
     instantclient-basic-macos.x64-11.2.0.4.0.zip
@@ -36,17 +42,26 @@ Python 2.7
 Gnu Readline 6.3
 ----------------
 
+For licensing reasons, the Mac doesn't come with GNU readline.   sqlminus
+will run without GNU readline, but is a much happier experience with it.
+
     http://ftp.gnu.org/gnu/readline/
     readline-6.3.tar.gz
 
 cx_Oracle 5.2
 -------------
 
+This is the most excellent Oracle interface package by the most excellent
+Anthony Tuininga.
+
     https://pypi.python.org/pypi/cx_Oracle/5.2
     cx_Oracle-5.2.tar.gz
 
 sqlminus
 --------
+
+It's nicest just to grab the entire sqlminus package from github, but
+you actually only need one file.
 
     https://github.com/marhar/sqlminus/tree/master/sqlminus
     sqlminus
@@ -56,6 +71,8 @@ Prep for Build
 
 Verify downloaded files
 -----------------------
+
+After downloading this is what you should have, modulo version changing.
 
     ls $TOP/dist
         Python-2.7.9.tgz
@@ -68,6 +85,8 @@ Verify downloaded files
 Untar source packages
 ---------------------
 
+Put all these in src/.
+
     cd $TOP/src
     tar xzf ../dist/Python-2.7.9.tgz
     tar xzf ../dist/cx_Oracle-5.2.tar.gz
@@ -75,6 +94,9 @@ Untar source packages
 
 Set up Instantclient
 ====================
+
+These will go into $TOP/intantclient_11_2.  You need to make one symlink
+and set a couple of environment variables.
 
     cd $TOP
     unzip dist/instantclient-basic-macos.x64-11.2.0.4.0.zip 
@@ -91,7 +113,9 @@ Build/Installation
 ==================
 
 Make sure you have gcc installed.  It's part of the free xcode package
-from the Mac App store.  Run gcc once so you can accept the license.
+from the Mac App store.  If you download and install xcode, be sure and
+run gcc once from the command line before you build.  It will ask you
+to agree to the license.
 
 readline
 --------
@@ -149,7 +173,7 @@ Test
 
     $TOP/bin/sqlminus scott/tiger@orcl
     --------------------------------------------------
-    Welcome to sqlminus
+    Welcome to sqlminus!
     docs at: https://github.com/marhar/sqlminus
     --------------------------------------------------
     connecting to scott/tiger@orcl...
