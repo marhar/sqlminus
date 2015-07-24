@@ -283,28 +283,28 @@ I'll update it here.
 
 Administrivia
 -------------
-:Version:
-    1.1
-:Download:
-    http://code.google.com/p/orapig
-:Documentation:
-    http://markharrison.net/orapig
-:Authors:
-    Mark Harrison (marhar@gmail.com)
-    Bjorn Leffler (bjorn@pixar.com)
-:License:
-    Copyright 2008 Pixar, available under a BSD license.
-:Support:
-    Send questions to the cx_Oracle mailing list.  There's a
-    link at: http://python.net/crew/atuining/cx_Oracle
-:Dependencies:
-    cx_Oracle, the Python interface for Oracle:
-    http://python.net/crew/atuining/cx_Oracle/
-:Installation:
-    OraPIG is a standalone script.  Edit the #! line and put in
-    an appropriate directory.
-:Motto:
-    "There's a Snake in my Oracle!"
+   :Version:
+        1.1
+    :Download:
+        http://code.google.com/p/orapig
+    :Documentation:
+        http://markharrison.net/orapig
+    :Authors:
+        Mark Harrison (marhar@gmail.com)
+        Bjorn Leffler (bjorn@pixar.com)
+    :License:
+        Copyright 2008 Pixar, available under a BSD license.
+    :Support:
+        Send questions to the cx_Oracle mailing list.  There's a
+        link at: http://python.net/crew/atuining/cx_Oracle
+    :Dependencies:
+        cx_Oracle, the Python interface for Oracle:
+        http://python.net/crew/atuining/cx_Oracle/
+    :Installation:
+        OraPIG is a standalone script.  Edit the #! line and put in
+        an appropriate directory.
+    :Motto:
+        "There's a Snake in my Oracle!"
 
 Thanks
 ------
