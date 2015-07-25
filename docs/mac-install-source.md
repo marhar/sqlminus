@@ -61,9 +61,10 @@ sqlminus
 --------
 
 It's nicest just to grab the entire sqlminus package from github, but
-you actually only need one file.
+you actually only need two files.
 
     https://github.com/marhar/sqlminus/tree/master/sqlminus
+    sqlminus.py
     sqlminus
 
 Prep for Build
@@ -80,6 +81,7 @@ After downloading this is what you should have, modulo version changing.
         instantclient-basic-macos.x64-11.2.0.4.0.zip
         instantclient-sdk-macos.x64-11.2.0.4.0.zip
         readline-6.3.tar.gz
+        sqlminus.py
         sqlminus
 
 Untar source packages
@@ -161,13 +163,12 @@ Test the Installation
 sqlminus configuration
 ======================
 
-Edit the first line of sqlminus to point the proper python, and
-copy the sqlminus to your path.
+There's two files: sqlminus.py and sqlminus, a wrapper script
+where you can set the necessary environment variables.  Copy
+these to $TOP/bin
 
-    #!/usr/bin/env /usr/local/sqlminus/bin/python
-
-    cp $TOP/dist/sqlminus $TOP/bin
-    chmod +x $TOP/bin/sqlminus
+The only necessary change is to edit sqlminus to properly
+set $TOP to your build area.  
 
 Test
 ----
