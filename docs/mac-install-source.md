@@ -14,10 +14,10 @@ directory.  In addition we'll store the distribution files and build the
 source there as well.
 
 
-    export TOP=/Users/mh/p/cx  # where I built and installed while writing this doc
-    mkdir -p $TOP/dist         # collect the install files here
-    mkdir -p $TOP/src          # build things here
-    export PATH=$TOP/bin:$PATH # not necessary, but convenient for testing
+    export TOP=/usr/local/sqlminus  # where I built and installed
+    mkdir -p $TOP/dist              # collect the install files here
+    mkdir -p $TOP/src               # build things here
+    export PATH=$TOP/bin:$PATH      # not necessary, but convenient for testing
 
 Downloads
 =========
@@ -121,15 +121,16 @@ readline
 --------
 
     cd $TOP/src/readline-6.3
-    ./configure --prefix=/Users/mh/p/cx
+    ./configure --prefix=$TOP
     make
     make install
+    (you can ignore any comments about ldconfig)
 
 python
 ------
 
     cd $TOP/src/Python-2.7.9
-    ./configure --prefix=/Users/mh/p/cx
+    ./configure --prefix=$TOP
     make
     make install
 
@@ -163,7 +164,7 @@ sqlminus configuration
 Edit the first line of sqlminus to point the proper python, and
 copy the sqlminus to your path.
 
-    #!/usr/bin/env /Users/mh/p/cx/bin/python
+    #!/usr/bin/env /usr/local/sqlminus/bin/python
 
     cp $TOP/dist/sqlminus $TOP/bin
     chmod +x $TOP/bin/sqlminus
@@ -173,8 +174,9 @@ Test
 
     $TOP/bin/sqlminus scott/tiger@orcl
     --------------------------------------------------
-    Welcome to sqlminus!
-    docs at: https://github.com/marhar/sqlminus
+    | Welcome to sqlminus v2.1                       |
+    | docs at: https://github.com/marhar/sqlminus    |
+    | type "help" for help                           |
     --------------------------------------------------
     connecting to scott/tiger@orcl...
     scott@orcl> select 2+2 from dual;
