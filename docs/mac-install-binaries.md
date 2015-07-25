@@ -1,8 +1,8 @@
 Binary installation of cx_Oracle and sqlminus on MacOS
 ======================================================
 
-I've put together a binary installation for cx_Oracle and sqlminus.
-No guarantees, but "it works for me".
+I've put together an experimental binary installation for
+cx_Oracle and sqlminus.  No guarantees, but "it works for me".
 
 download the tar file
 ---------------------
