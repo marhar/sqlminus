@@ -3,13 +3,12 @@
 # invoke sqlminus, with proper setting of environment
 # put this on your path and adjust
 
-TOP=/Users/mh/p/cx                  # where cx_Oracle/python is installed
-SQLMINUS=$HOME/g/sqlminus/sqlminus/sqlminus  # where sqlminus is installed
-TNS_ADMIN=/etc                      # handle tnsnames location if necessary
+TOP=/usr/local/sqlminus             # where cx_Oracle/python is installed
+# TNS_ADMIN=/etc                    # handle tnsnames location if necessary
 
 export ORACLE_HOME=$TOP/instantclient_11_2
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ORACLE_HOME
 export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$ORACLE_HOME
 
-exec $TOP/bin/python $SQLMINUS "$@"
+exec $TOP/bin/python $TOP/bin/sqlminus.py "$@"

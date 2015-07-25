@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env /usr/local/sqlminus/bin/python
 """
 sqlminus -- sqlplus minus. the features? the suck? you be the judge!
 
@@ -64,6 +64,37 @@ license and download:
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
 import getpass,shlex,cx_Oracle
 
+
+#-----------------------------------------------------------------------
+def P(s):
+    """print and flush, with newline"""
+    P0(s+'\n')
+
+#-----------------------------------------------------------------------
+def P0(s):
+    """print and flush, no newline"""
+    sys.stdout.write(s)
+    sys.stdout.flush()
+
+#-----------------------------------------------------------------------
+def E(s):
+    """error print and flush, with newline."""
+    sys.stderr.write(s+'\n')
+    sys.stderr.flush()
+
+#-----------------------------------------------------------------------
+def V(s):
+    """verbose print and flush, with newline. --quiet to supress"""
+    V0(s+'\n')
+
+#-----------------------------------------------------------------------
+print_is_quiet = False
+def V0(s):
+    """verbose print and flush, no newline. --quiet to supress"""
+    if print_is_quiet is False:
+        sys.stdout.write(s)
+        sys.stdout.flush()
+
 class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
@@ -72,9 +103,9 @@ class OracleCmd(cmd.Cmd):
         cmd.Cmd.__init__(self)
         if sysdba is True:
             self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA)
-            print '----------------------------------------------------------'
-            print '| DUMBASS ALERT: logged in as sysdba, dont be a DUMBASS! |'
-            print '----------------------------------------------------------'
+            P('----------------------------------------------------------')
+            P('| DUMBASS ALERT: logged in as sysdba, dont be a DUMBASS! |')
+            P('----------------------------------------------------------')
         else:
             self.conn = cx_Oracle.connect(connstr)
         self.conn.client_identifier='sqlminus'
@@ -127,16 +158,16 @@ class OracleCmd(cmd.Cmd):
 
         # header
         line=fmt0%tuple([i[0].lower() for i in desc])
-        print line
-        print re.sub('[^ ]','-',line)
+        P(line)
+        P(re.sub('[^ ]','-',line))
 
         # rows
         x=0
         for r in rows:
             r2=[self.nullstr if i is None else i for i in r]
             line=fmt1%tuple(r2)
-            print '%s%s'%(self.colors[x],line)
-        print self.colors[2]
+            P('%s%s'%(self.colors[x],line))
+        P(self.colors[2])
 
     #-------------------------------------------------------------------
     def run(self):
@@ -157,14 +188,14 @@ class OracleCmd(cmd.Cmd):
                     results=self.curs.fetchall()
                     self.oraprint(self.curs.description,results)
                 if self.curs.rowcount >= 0:
-                    print '(%d rows, %.3f sec)'%(self.curs.rowcount, elapsed)
+                    P('(%d rows, %.3f sec)'%(self.curs.rowcount, elapsed))
                 else:
-                    print '(%.3f sec)'%(elapsed)
+                    P('(%.3f sec)'%(elapsed))
                 self._dump_dbms_output()
         except cx_Oracle.DatabaseError,e:
             elapsed=time.time()-t0
-            print str(e).strip()
-            print '(%.3f sec)'%(elapsed)
+            P(str(e).strip())
+            P('(%.3f sec)'%(elapsed))
         finally:
             signal.signal(signal.SIGTSTP, signal.SIG_DFL)
         self.cmd=''
@@ -192,7 +223,7 @@ class OracleCmd(cmd.Cmd):
                 ll=[x.strip() for x in fd]
                 fd.close()
             except IOError,e:
-                print '%s: %s'%(fn, str(e))
+                P('%s: %s'%(fn, str(e)))
                 ll=['']
         else:
             ll=[s]
@@ -215,7 +246,7 @@ class OracleCmd(cmd.Cmd):
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
             fullcmd=self.cmd+buf
-            #print '<%s>'%(fullcmd)
+            #P('<%s>'%(fullcmd))
             if re.search(r'^\s*$',fullcmd,re.I|re.S):
                 #cmds
                 self.tmpcomp=[i for i in self.cmds if i.startswith(text)]
@@ -254,7 +285,7 @@ class OracleCmd(cmd.Cmd):
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
         self.nullstr=s;
-        print 'null string set to "%s"'%(self.nullstr)
+        P('null string set to "%s"'%(self.nullstr))
 
     #-----------------------------------------------------------------------
     def do_du(self,s):
@@ -274,33 +305,37 @@ class OracleCmd(cmd.Cmd):
     def do_sqlid(self,s):
         """print text for sql id"""
 
+        #TODO: fix split returns != 2 len
         try:
             inst,tid=s.split()
         except IndexError,e:
-            print 'usage: sqlid instance_no sql_id'
+            P('usage: sqlid instance_no sql_id')
             return
         q="""select sql_text
                from gv$sqltext_with_newlines
               where inst_id=:1 and sql_id=:2
                order by piece"""
         self.curs.execute(q,[inst,tid])
-        print ''.join([a[0] for a in self.curs.fetchall()])
-        print ''
+        P(''.join([a[0] for a in self.curs.fetchall()]))
+        P('')
 
     #-------------------------------------------------------------------
     def do_help(self,s):
         """print some help stuff"""
-        print self.helptext
+        P(self.helptext)
 
     #-------------------------------------------------------------------
     def do_refresh(self,s):
         """refresh cached stuff"""
-        print self.ltabs
+        P('TODO: INVESTIGATE RECACHE')
+        P('TODO: CLEAN THIS UP')
+        P(self.ltabs)
 
     #-------------------------------------------------------------------
     def do_tables(self,s):
         """print a list of the tables"""
-        print self.ltabs
+        P('TODO: CLEAN THIS UP')
+        P(str(self.ltabs))
 
     #-------------------------------------------------------------------
     def do_blockers(self,s):
@@ -336,33 +371,33 @@ class OracleCmd(cmd.Cmd):
     def do_info(self,s):
         """print some info about the connection"""
         cv='.'.join([str(x) for x in cx_Oracle.clientversion()])
-        print 'client:'
-        print '                 pid :',os.getpid()
-        print '            hostname :',socket.gethostname()
-        print '                user :',getpass.getuser()
-        print 'cx_Oracle:'
-        print '             version :',cx_Oracle.version
-        print '       clientversion :',cv
-        print '            apilevel :',cx_Oracle.apilevel
-        print '           buildtime :',cx_Oracle.buildtime
-        print 'connection:'
-        print '             version :',self.conn.version
-        print '            username :',self.conn.username
-        print '            tnsentry :',self.conn.tnsentry
-        print '                 dsn :',self.conn.dsn
-        print '            encoding :',self.conn.encoding
-        print '           nencoding :',self.conn.nencoding
-        print 'maxBytesPerCharacter :',self.conn.maxBytesPerCharacter
-        print '       stmtcachesize :',self.conn.stmtcachesize
-        print '          autocommit :',self.conn.autocommit
-        print '      current_schema :',self.conn.current_schema
-        print 'cursor:'
-        print '           arraysize :',self.curs.arraysize
-        print '    numbersAsStrings :',self.curs.numbersAsStrings
-        #print 'other:'
-        #print '      clientinfo :',self.my_clientinfo
-        #print '          module :',self.my_module
-        #print 'client_identifier :',self.my_client_identifier
+        P('client:')
+        P('                 pid : %s'%(os.getpid()))
+        P('            hostname : %s'%(socket.gethostname()))
+        P('                user : %s'%(getpass.getuser()))
+        P('cx_Oracle:')
+        P('             version : %s'%(cx_Oracle.version))
+        P('       clientversion : %s'%(cv))
+        P('            apilevel : %s'%(cx_Oracle.apilevel))
+        P('           buildtime : %s'%(cx_Oracle.buildtime))
+        P('connection:')
+        P('             version : %s'%(self.conn.version))
+        P('            username : %s'%(self.conn.username))
+        P('            tnsentry : %s'%(self.conn.tnsentry))
+        P('                 dsn : %s'%(self.conn.dsn))
+        P('            encoding : %s'%(self.conn.encoding))
+        P('           nencoding : %s'%(self.conn.nencoding))
+        P('maxBytesPerCharacter : %s'%(self.conn.maxBytesPerCharacter))
+        P('       stmtcachesize : %s'%(self.conn.stmtcachesize))
+        P('          autocommit : %s'%(self.conn.autocommit))
+        P('      current_schema : %s'%(self.conn.current_schema))
+        P('cursor:')
+        P('           arraysize : %s'%(self.curs.arraysize))
+        P('    numbersAsStrings : %s'%(self.curs.numbersAsStrings))
+        #P('other:')
+        #P('      clientinfo : %s'%(self.my_clientinfo))
+        #P('          module : %s'%(self.my_module))
+        #P('client_identifier : %s'%(self.my_client_identifier))
 
     #-------------------------------------------------------------------
     def do_desc(self,s):
@@ -385,10 +420,10 @@ class OracleCmd(cmd.Cmd):
              where owner=:1 and object_name=:2""",[schname,objname])
         r=c.fetchone()
         if r is None:
-            print 'unknown object:',s
+            P('unknown object:'+str(s))
             return
         otype=r[0].lower()
-        print otype
+        P(otype)
        
         if otype in ('table','view'):
             c.execute("""
@@ -403,9 +438,9 @@ class OracleCmd(cmd.Cmd):
         elif otype in ('sequence'):
             self.do_ddl(s)
         elif otype in ('package'):
-            print 'need to add desc support for type:',otype
+            P('need to add desc support for type: '+otype)
         else:
-            print 'need to add desc support for type:',otype
+            P('need to add desc support for type: '+otype)
 
     #-------------------------------------------------------------------
     def do_fkeys(self,s):
@@ -453,7 +488,7 @@ class OracleCmd(cmd.Cmd):
         """,[s.upper()])
         x=c.fetchall()
         if len(x) == 0:
-            print 'unknown object:',s
+            P('unknown object: '+s)
         else:
             self.oraprint(c.description,x)
 
@@ -463,7 +498,7 @@ class OracleCmd(cmd.Cmd):
 
         s=s.strip(';')
         if len(s.split()) != 1:
-            print 'usage: ddl object-name'
+            P('usage: ddl object-name')
             return
 
         c=self.conn.cursor()
@@ -487,7 +522,7 @@ class OracleCmd(cmd.Cmd):
             [s.upper()])
         x=c.fetchall()
         if len(x) == 0:
-            print 'unknown object:',s
+            P('unknown object: '+s)
             return
         objtype=x[0][0]
         try:
@@ -496,31 +531,31 @@ class OracleCmd(cmd.Cmd):
             code=''
             for rr in c:
                 code += rr[0]+'\n'
-            print code
+            P(code)
         except cx_Oracle.DatabaseError,e:
             err,=e
             msg=err.message.strip()
             if err.code == 31603:
                 msg=msg.split('\n')[0]
-            print msg
+            P(msg)
 
     #-------------------------------------------------------------------
     def do_EOF(self,s):
         """goodbye -- surely there's a better way to catch eof??"""
-        print ''
+        P('')
         sys.exit(0);
 
     #-------------------------------------------------------------------
     def do_ctls(self,s):
         """list context indices"""
-        print 'TBD'
+        P('    NOT IMPLEMENTED YET...')
 
     #-------------------------------------------------------------------
     def do_ctexplain(self,s):
         """explain a ctx search"""
         x=shlex.split(s)
         if len(x) != 2:
-            print 'usage: ctexplain index query'
+            P('usage: ctexplain index query')
             return
         (ix,query)=x
         ix=ix.upper()
@@ -564,11 +599,13 @@ class OracleCmd(cmd.Cmd):
     def do_tron(self,s):
         """turn on dbms_output"""
         self.curs.execute("""begin dbms_output.enable; end;""")
+        P('dbms_output enabled')
 
     #-------------------------------------------------------------------
     def do_troff(self,s):
         """turn off dbms_output"""
         self.curs.execute("""begin dbms_output.disable; end;""")
+        P('dbms_output disabled')
 
     #-------------------------------------------------------------------
     def _dump_dbms_output(self):
@@ -582,7 +619,7 @@ class OracleCmd(cmd.Cmd):
             if ll is None:
                 break
             else:
-                print ll
+                P(ll)
 
     #-------------------------------------------------------------------
     def _call(self,rv,s):
@@ -590,12 +627,12 @@ class OracleCmd(cmd.Cmd):
         t0=time.time()
         try:
             self.curs.execute("begin :rv := %s end;" % (s), rv=rv)
-            print rv.getvalue()
+            P(rv.getvalue())
         except cx_Oracle.DatabaseError,e:
-            print e
+            P(str(e))
         elapsed=time.time()-t0
         self._dump_dbms_output()
-        print '(%.3f sec)'%(elapsed)
+        P('(%.3f sec)'%(elapsed))
 
     #-------------------------------------------------------------------
     def do_calln(self,s):
@@ -625,6 +662,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_rehash(self,s=None):
+        # TODO: nuke this, make it always dynamic?
         """(re)populate the user's tables/columns"""
         self.xtabs=collections.defaultdict(list)
         self.xcols=collections.defaultdict(list)
@@ -656,27 +694,30 @@ def lookupAlias(s):
 def main():
     """the main thing"""
 
-    print '--------------------------------------------------'
-    print 'Welcome to sqlminus'
-    print 'docs at: https://github.com/marhar/sqlminus'
-    print '--------------------------------------------------'
+    P('--------------------------------------------------')
+    P('| Welcome to sqlminus v2.1                       |')
+    P('| docs at: https://github.com/marhar/sqlminus    |')
+    P('| type "help" for help                           |')
+    P('--------------------------------------------------')
     parser=argparse.ArgumentParser()
     #parser.add_argument('-f',"--file",help="input sql file")
     parser.add_argument('--sysdba',action='store_true',help="login as sysdba")
+    parser.add_argument('--quiet','-q',action='store_true',help="quiet output")
     args,items=parser.parse_known_args()
+    global print_is_quiet; print_is_quiet = args.quiet
 
     if len(items) < 1:
-        print >>sys.stderr, "usage: sqlminus connstr"
+        E('usage: sqlminus connstr')
         sys.exit(1)
 
     connstr=lookupAlias(items[0])
     connstr2=re.sub('/.*@','@',connstr)
 
-    print 'connecting to %s...'%(connstr2)
+    P('connecting to %s...'%(connstr2))
     try:
         cc=OracleCmd(connstr,args.sysdba)
     except cx_Oracle.DatabaseError,e:
-        print e
+        P(str(e))
         sys.exit(1)
     if os.isatty(sys.stdin.fileno()):
         cc.connstr2=connstr2
@@ -686,6 +727,8 @@ def main():
         for aa in items[1:]:
             if aa.startswith('=') or aa.startswith('@'):
                 # @foo or =foo means foo is a file with sql commands
+                # @foo is compatible with sqlplus, but
+                # =foo allows completion
                 dat=open(aa[1:]).read()
                 cc.default(dat)
             else:
@@ -714,8 +757,7 @@ def main():
                 break
             except KeyboardInterrupt:
                 cc.clearinput()
-                print '^C',
-                print '(input cleared)'
+                P('^C (input cleared)')
 
 if __name__=='__main__':
     main()
