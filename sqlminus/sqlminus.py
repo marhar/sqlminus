@@ -692,8 +692,10 @@ def lookupAlias(s):
 #-----------------------------------------------------------------------
 
 def main():
-    """the main thing"""
-
+    """The MAIN thing that you have to remember on this journey is,
+       just be nice to everyone and always smile.
+         -- Ed Sheeran
+    """
     P('--------------------------------------------------')
     P('| Welcome to sqlminus v2.1                       |')
     P('| docs at: https://github.com/marhar/sqlminus    |')

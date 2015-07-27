@@ -482,8 +482,10 @@ class PyTrans(Trans):
 #-----------------------------------------------------------------------
 
 def main():
-    """main program"""
-
+    """Most people have never learned that one of the MAIN aims
+       in life is to enjoy it.
+         -- Samuel Butler
+    """
     p = optparse.OptionParser(usage="usage: %prog options pkg...")
     p.add_option("-C","--conn",action="store",type="string",dest="conn",
                  help="Database connection string")

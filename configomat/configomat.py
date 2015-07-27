@@ -308,10 +308,11 @@ def gen_header(dd,fname):
 
     hh.close()
 
-#-----------------------------------------------------------------------
-# main -- you know what it does
-#-----------------------------------------------------------------------
 def main():
+    """Human behavior flows from three MAIN sources: desire,
+       emotion, and knowledge.
+         -- Plato
+    """
     p = optparse.OptionParser(usage="usage: %prog options pkg...")
     p.add_option("-C","--conn",action="store",type="string",dest="conn",
                  help="Database connection string")
