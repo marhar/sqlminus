@@ -1,0 +1,32 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>several flavors of connect</h1>
+<p>Here are several ways to retrieve the data from a query.  For
+lots of data, it's best to use the iterator.  For single-row
+results, use fetchone().</p>
+<pre>#-- simple one-row fetch: good when you know only one row is returned
+#-- returns None when there is no more data
+curs.execute('select 2+2 from dual')
+print curs.fetchone()
+
+#-- iterating over a cursor
+#-- best way to loop over a results set
+curs.execute('select a,b from cxdemo_t1')
+for row in curs:
+    print row
+
+#-- fetch all rows in one call
+curs.execute('select a,b from cxdemo_t1')
+print curs.fetchall()</pre>
+<p><a href=fetch.py>(fetch.py)</a>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

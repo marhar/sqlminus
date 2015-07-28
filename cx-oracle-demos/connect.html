@@ -1,0 +1,25 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>several flavors of connect</h1>
+<p>connect() returns a connection, cursor() returns a cursor.  These are the
+two basic objects you will use.  SYSDBA is needed for system accounts.</p>
+<pre># normal user connect -- connstr looks like scott/tiger@orcl
+conn = cx_Oracle.connect(connstr)
+
+# normal user connect, three parms
+conn = cx_Oracle.connect('scott', 'tiger', 'orcl')
+
+# connect to the database as sysdba
+conn = cx_Oracle.connect('sys/secret@mydb', mode=cx_Oracle.SYSDBA)</pre>
+<p><a href=connect.py>(connect.py)</a>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

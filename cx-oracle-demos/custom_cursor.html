@@ -1,0 +1,46 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>customizing Connection and Cursor classes</h1>
+<p>Derive your own Connection class from the cx_Oracle one.
+Derive your own Cursor class from the cx_Oracle one.
+Augment cx_Oracle.connect() by making it point to your
+own Connection class. From now on every code that uses
+cx_Oracle in the standard way will print each query
+plus arguments.  If you want to switch back, just do
+<br>    cx_Oracle.connect = cx_Oracle.Connection
+<br>(From Danny Boxhoorn)</p>
+<pre>import sys
+import cx_Oracle
+connstr = sys.argv[1]
+
+class MyConnection(cx_Oracle.Connection):
+    def cursor(self):
+        return MyCursor(self)
+
+class MyCursor(cx_Oracle.Cursor):
+    def execute(self, *args):
+        print 'execute:',args
+        return cx_Oracle.Cursor.execute(self, *args)
+
+cx_Oracle.connect = MyConnection
+
+conn = cx_Oracle.connect(connstr)
+curs = conn.cursor()
+
+curs.execute('select 2+2 from dual')
+curs.execute('select :1+:2 from dual', [4,5])</pre>
+<p><a href=custom_cursor.py>(custom_cursor.py)</a>
+<h2>output</h2>
+<pre>execute: ('select 2+2 from dual',)
+execute: ('select :1+:2 from dual', [4, 5])</pre>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

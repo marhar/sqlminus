@@ -1,0 +1,71 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>Transaction Level Read Consistency</h1>
+<p>This shows how to set the isolation level to lock your transaction
+to a single point in time, isolating you from other people's updates.<p>
+
+When running this demo, add one extra parameter "reader" or "writer".<p>
+Run this demo in several windows.  In the first, run as "writer".  Then
+in several other windows, run as "reader".<p>
+
+"Oracle also offers the option of enforcing transaction-level read
+consistency. When a transaction runs in serializable mode, all data
+accesses reflect the state of the database as of the time the transaction
+began. This means that the data seen by all queries within the same
+transaction is consistent with respect to a single point in time, except
+that queries made by a serializable transaction do see changes made
+by the transaction itself. Transaction-level read consistency produces
+repeatable reads and does not expose a query to phantoms."<p>
+
+<a href=http://download.oracle.com/docs/cd/B19306_01/server.102/b14220/consist.htm>
+http://download.oracle.com/docs/cd/B19306_01/server.102/b14220/consist.htm
+</a></p>
+<pre>import time
+
+if role == 'writer':
+    # this code loops and sets the value to 1,2,3,...
+
+    curs.execute("delete from isolation_demo");
+    curs.execute("insert into isolation_demo(x) values(0)");
+    while True:
+        curs.execute('select x from isolation_demo')
+        print time.asctime(),curs.fetchall()
+        curs.execute('update isolation_demo set x=x+1')
+        conn.commit()
+        time.sleep(1)
+else:
+    # this code loops and prints the current value in the table.
+    # because it has set the isolation level, all queries are
+    # "locked" in time and will not be affected by other processes
+    # modifying the database.
+
+    # read only mode is similar to serializable mode, but all
+    # data modifications are disallowed and will throw errors.
+    curs.execute('set transaction read only')
+    #curs.execute('set transaction isolation level serializable')
+
+    while True:
+        curs.execute('select x from isolation_demo')
+        print time.asctime(),curs.fetchall()
+        time.sleep(1)</pre>
+<p><a href=transaction-consistency.py>(transaction-consistency.py)</a>
+<h2>output</h2>
+<pre>The writer window will count from 1,2,3....
+
+Each reader window will show the value consistent from the beginning
+of the transaction.</pre>
+<h2>setup</h2>
+<pre>create table isolation_demo(x number);</pre>
+<h2>cleanup</h2>
+<pre>drop table isolation_demo;</pre>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

@@ -1,0 +1,45 @@
+make files:
+    array -- returning array from stored procedure
+    userenv -- showing user environment (ORACLE)
+    clob -- accessing clob data (copy from blob?)
+    seq -- accessing sequence number
+    datefmt -- setting date format
+    session_info -- information about the current session (oracl-killstring.py)
+    traceing -- how to trace a session (oracle-multistmt.py)
+    prepare -- prepared statements
+
+put oracle-sequence-into into code into select into
+make package cxdemo, table cxdemo_t1, cxdemo_alltypes;
+
+connection
+
+	inputtypehandler
+	ouptputtypehandler
+
+	ping
+
+	prepare
+
+	register
+
+	commit
+	rollback
+
+	subscribe
+
+cursor
+
+variable
+
+subscription
+
+sessionpool
+
+lob
+
+
+alltypes
+
+
+
+create package

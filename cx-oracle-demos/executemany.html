@@ -1,0 +1,33 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>several flavors of execute</h1>
+<p>This allows many operations to be executed without an
+an equal number of client/server round trips.</p>
+<pre># positional parameters receive a list of lists
+curs.executemany("insert into cxdemo_t1(a,b) values(:1,:2)",
+                  [[1,'aa'],[2,'bb']])
+
+# named parameters received a list of dictionaries
+curs.executemany("insert into cxdemo_t1(a,b) values(:x,:y)",
+                  [{'x':3,'y':'cc'},
+                   {'x':4,'y':'dd'}])
+
+# procedures need a begin/end wrapper. semicolon necessary after end
+curs.executemany("begin cxdemo.p2(:1,:2); end;",
+                  [[5,'ee'],[6,'ff']])
+
+# cx_Oracle detects zero parms and doesn't make the call,
+# protecting you from a ORA-24333: zero iteration count
+curs.executemany("insert into cxdemo_t1(a,b) values(:1,:2)", [])</pre>
+<p><a href=executemany.py>(executemany.py)</a>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

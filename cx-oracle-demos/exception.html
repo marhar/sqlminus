@@ -1,0 +1,29 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>Handling an oracle exception</h1>
+<p>cx_Oracle will throw cx_Oracle.DatabaseError exceptions.  Here's how
+to extract the oracle error code and error message.</p>
+<pre>try:
+    curs.execute('select 1/0 from dual')
+except cx_Oracle.DatabaseError, e:
+    print "Exception:", e
+    errorObj, = e.args
+    print "   ErrorCode:", errorObj.code
+    print "ErrorMessage:", errorObj.message</pre>
+<p><a href=exception.py>(exception.py)</a>
+<h2>output</h2>
+<pre>Exception: ORA-01476: divisor is equal to zero
+
+   ErrorCode: 1476
+ErrorMessage: ORA-01476: divisor is equal to zero</pre>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

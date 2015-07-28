@@ -1,0 +1,35 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>processing a reference cursor</h1>
+<p>A reference cursor is Oracle's iterator.  In this example, the
+stored procedure refc returns a reference cursor and the python
+code iterates over the rows pointed to by the reference cursor.
+<pre>
+    -- pl/sql function that returns a ref cursor
+    function refc return sys_refcursor is
+        rc  sys_refcursor;
+    begin
+        open rc for select a, b from cxdemo_t1;
+        return rc;
+    end;
+</pre></p>
+<pre>res=curs.callfunc('cxdemo.refc',cx_Oracle.CURSOR)
+for r in res:
+    print r
+
+res2=conn.cursor()
+curs.execute("begin :1 := cxdemo.refc; end;",[res2])
+for r in res2:
+    print r</pre>
+<p><a href=refcursor.py>(refcursor.py)</a>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>

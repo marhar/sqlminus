@@ -1,0 +1,6 @@
+set -x
+make clean
+make
+ssh markhar1@markharrison.net rm -rf public_html/cx-oracle-demos
+ssh markhar1@markharrison.net mkdir public_html/cx-oracle-demos
+scp * markhar1@markharrison.net:public_html/cx-oracle-demos

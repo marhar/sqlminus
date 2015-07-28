@@ -1,0 +1,25 @@
+<head>
+<link rel="stylesheet" type="text/css" href="cx-oracle-demos.css" />
+</head>
+<body>
+<html>
+<h1>top N rows of query</h1>
+<p>This select the first N rows of a query.  If you are looking
+for the SELECT...LIMIT clause this is it.
+<p>
+Note that ROWNUM starts at 1 and not 0.</p>
+<pre># the first 5 rows of the subquery
+curs.execute("""select * from (
+                  select a,b from cxdemo_t1 order by a
+                ) where rownum <= 5""")
+for r in curs:
+    print r[0]</pre>
+<p><a href=top_n_rows.py>(top_n_rows.py)</a>
+
+<p class=footer>
+<a href=index.html>index</a> -
+<a href=http://code.google.com/p/cx-oracle-demos>home</a> -
+<a href=http://cx-oracle.sourceforge.net/html/index.html>cx_Oracle</a>
+
+</html>
+</body>
