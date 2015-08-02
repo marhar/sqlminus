@@ -78,15 +78,22 @@ def P0(s):
     sys.stdout.flush()
 
 #-----------------------------------------------------------------------
-def E(s):
-    """error print and flush, with newline."""
-    sys.stderr.write(s+'\n')
-    sys.stderr.flush()
+dbgfd=None
+def D0(s):
+    """debug output, no newline"""
+    s=str(s)
+    global dbgfd
+    if dbgfd is None:
+        dbgfd=open('/tmp/sqlminus.dbg','a')
+        D('================================================== DBGFD')
+    dbgfd.write(s)
+    dbgfd.flush()
 
 #-----------------------------------------------------------------------
-def V(s):
-    """verbose print and flush, with newline. --quiet to supress"""
-    V0(s+'\n')
+def D(s):
+    """debug output with newline."""
+    s=str(s)
+    D0(s+'\n')
 
 #-----------------------------------------------------------------------
 print_is_quiet = False
@@ -97,18 +104,25 @@ def V0(s):
         sys.stdout.flush()
 
 #-----------------------------------------------------------------------
-def termcols():
-    """how many columns on our screen?"""
-    # hmm doesn't seem to honor a resized screen
-    x=int(os.popen('tput cols').readline())
-    return x
+def V(s):
+    """verbose print and flush, with newline. --quiet to supress"""
+    V0(s+'\n')
 
 #-----------------------------------------------------------------------
-def termlines():
-    """how many lines on our screen?"""
-    # hmm doesn't seem to honor a resized screen
-    x=int(os.popen('tput lines').readline())
-    return x
+def termRowsCols():
+    """how many rows, cols on our screen?"""
+    rows,cols=os.popen('stty size', 'r').read().split()
+    return [int(rows),int(cols)]
+
+#-----------------------------------------------------------------------
+def termCols():
+    """how many columns on our screen?"""
+    return termRowsCols()[1]
+
+#-----------------------------------------------------------------------
+def termRows():
+    """how many rows on our screen?"""
+    return termRowsCols()[0]
 
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
@@ -243,15 +257,36 @@ class OracleCmd(cmd.Cmd):
         for line in ll:
             self.default0(line)
 
+    #-----------------------------------------------------------------------
+    def do_x(self,s):
+        """for internal testing"""
+        pass
+        examples="""
+        D('s=<%s>'%(s))
+        self.ltabs(s)
+        self.cmd='select 2+2 four from dual;'
+        self.run()
+        """
+
     #-------------------------------------------------------------------
-    def ltabs(self):
+    def ltabs(self,prefix=None):
         """"tmp test of local tables"""
         mcurs=self.conn.cursor()
-        mcurs.execute("""select unique table_name
-                           from user_tab_cols
-                         order by table_name""")
+        if prefix is None or prefix == '':
+            mcurs.execute("""select unique table_name
+                               from user_tab_cols
+                             order by table_name""")
+        else:
+            prefix=prefix.upper()+'%'
+            mcurs.execute("""select unique table_name
+                               from user_tab_cols
+                              where upper(table_name) like :1
+                             order by table_name""", [prefix])
         rr=mcurs.fetchall()
-        return [x[0] for x in rr]
+        rv=[x[0] for x in rr]
+        return rv
+
+        ###CHANGE TO STARTSWITH
 
     #-------------------------------------------------------------------
     def lcols(self):
@@ -275,6 +310,9 @@ class OracleCmd(cmd.Cmd):
            it tries to figure out when your typing sql, columns,
            and tables.
         """
+        # TODO: BUG: sometimes needs a couple of extra tab presses
+        # something I don't understand and need to figure out
+        #D('complete <%s> %d'%(text,state))
         if state == 0:
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
@@ -286,7 +324,8 @@ class OracleCmd(cmd.Cmd):
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
                 #tables
                 #add order by, where
-                self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
+                #self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
+                self.tmpcomp=[i for i in self.ltabs(text)]
             elif re.search(r'^\s*desc\s+$',fullcmd,re.I|re.S):
                 #tables
                 #add order by, where
@@ -310,6 +349,7 @@ class OracleCmd(cmd.Cmd):
 
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
+        """set the null string"""
         self.nullstr=s;
         P('null string set to "%s"'%(self.nullstr))
 
@@ -359,7 +399,7 @@ class OracleCmd(cmd.Cmd):
         for i in t:
             if len(i) > mx:
                 mx=len(i)
-        ncols=77/(mx+1)
+        ncols=max(1,termCols()/(mx+1))
         nrows=n/ncols
         rem=n-(nrows*ncols)
         fmt='%%-%ds'%(mx)
@@ -764,7 +804,7 @@ def main():
     global print_is_quiet; print_is_quiet = args.quiet
 
     if len(items) < 1:
-        E('usage: sqlminus connstr')
+        P('usage: sqlminus connstr')
         sys.exit(1)
 
     connstr=lookupAlias(items[0])
