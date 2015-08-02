@@ -26,8 +26,8 @@ special commands:
     info      : print random information about the connection
     du        : print disk usage
   jobs:
-    job1      : TODO: figure this out
-    job2      : TODO: figure this out
+    jobs      : list jobs for this user
+    jobhist   : list history for a particular job
   performance:
     explain   : display an execution plan
   context full text:
@@ -39,7 +39,6 @@ special commands:
     fkeys     : show nested child foreign key dependencies for a table
     tables    : list all user tables
     sqlid     : given sqlid, print sql statement (works on RAC)
-    jobs      : list all jobs
     tron      : turn on dbms_output
     troff     : turn off dbms_output
   misc:
@@ -65,7 +64,7 @@ license and download:
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
-import getpass,shlex,cx_Oracle
+import traceback,getpass,shlex,cx_Oracle
 
 
 #-----------------------------------------------------------------------
@@ -277,13 +276,6 @@ class OracleCmd(cmd.Cmd):
         for cmd in cmds:
             self.curs.execute(cmd)
             self.oraprint(self.curs.description,self.curs.fetchall())
-
-    #-----------------------------------------------------------------------
-    def do_jobsold(self,s):
-        """print all oracle jobs"""
-        q="""select job,what,last_date,next_date from dba_jobs"""
-        self.curs.execute(q)
-        self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
@@ -594,44 +586,36 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_jobs(self,s):
+        """list jobs for this user"""
+        self.curs.execute("""
+            select job_name job,job_type type,
+                state,enabled,failure_count fails,
+                substr(trunc(next_run_date,'MI'),1,15) as last,
+                nvl(instance_id, 0) as inst,
+                repeat_interval,
+                case when length(job_action) < 300 or job_action is null
+                    then job_action
+                    else '*** Too long to display here ***' end as text
+            from dba_scheduler_jobs
+            where owner=sys_context('USERENV','CURRENT_SCHEMA')
+            order by job_name
+        """)
+        self.oraprint(self.curs.description,self.curs.fetchall())
 
-        other="""
-        select owner||'.'||job_name job,log_date,status,error#,instance_id  
-          from dba_SCHEDULER_JOB_run_details 
-         where job_name = upper(:1)
-      order by log_date, owner_jobname"""
+    #-------------------------------------------------------------------
+    def do_jobhist(self,s):
+        """list history for the job"""
+        s=s.strip(';')
+        av=s.split()
+        if len(av) != 1:
+            P('usage: jobhist jobname')
+            return
 
-        Q1="""
-        select owner||'.'||job_name job,job_type type,
-            state,enabled,failure_count fails,
-            substr(trunc(last_start_date,'MI'),1,15) as start,
-            substr(trunc(next_run_date,'MI'),1,15) as bbb,
-            nvl(instance_id, 0) as inst,
-            repeat_interval,
-            case when length(job_action) < 300 or job_action is null
-                then job_action
-                else '*** Too long to display here ***' end as ddd,
-        999 as zzz
-        from dba_scheduler_jobs
-        order by owner||'.'||job_name
-        """
-
-        Q1="""
-        select job_name job,job_type type,
-            state,enabled,failure_count fails,
-            substr(trunc(last_start_date,'MI'),1,15) as starts,
-            substr(trunc(next_run_date,'MI'),1,15) as last,
-            nvl(instance_id, 0) as inst,
-            repeat_interval,
-            case when length(job_action) < 300 or job_action is null
-                then job_action
-                else '*** Too long to display here ***' end as text
-        from dba_scheduler_jobs
-        where owner=sys_context('USERENV','CURRENT_SCHEMA')
-        order by job_name
-        """
-
-        self.curs.execute(Q1)
+        self.curs.execute("""
+            select log_date,status,error#,instance_id
+              from dba_SCHEDULER_JOB_run_details
+             where job_name = upper(:1)
+          order by log_date""",[av[0]])
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
@@ -805,6 +789,30 @@ def main():
             except KeyboardInterrupt:
                 cc.clearinput()
                 P('^C (input cleared)')
+            except cx_Oracle.DatabaseError,e:
+                P('')
+                P('*************************************************')
+                P('')
+                P('Unexpected Database Error:')
+                P('')
+                traceback.print_exc()
+                P('please file a bug report here:')
+                P('    https://github.com/marhar/sqlminus/issues/new')
+                P('')
+                P('*************************************************')
+
+            except Exception,e:
+                P('')
+                P('*************************************************')
+                P('')
+                P('Unexpected Error:')
+                P('')
+                traceback.print_exc()
+                P('')
+                P('please file a bug report here:')
+                P('    https://github.com/marhar/sqlminus/issues/new')
+                P('')
+                P('*************************************************')
 
 if __name__=='__main__':
     main()
