@@ -43,7 +43,6 @@ special commands:
     troff     : turn off dbms_output
   misc:
     nullstr   : set the value displayed for the null string
-    rehash    : refresh table/column
     help      : print this help text
 
 features:
@@ -54,17 +53,17 @@ features:
     single file, easy to install
 
 author:
-    Mark Harrison, mh@pixar.com
+    Mark Harrison, marhar@gmail.com
+    https://github.com/marhar/sqlminus
 
 license and download:
     bsd-ish.  see orapig package for complete text.
     sqlminus is part of the orapig package.  It has eclipsed its
     siblings so now orapig is part of the sqlminus package.
-    https://github.com/marhar/sqlminus
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
-import traceback,getpass,shlex,cx_Oracle
+import traceback,getpass,shlex,subprocess,cx_Oracle
 
 
 #-----------------------------------------------------------------------
@@ -97,8 +96,21 @@ def V0(s):
         sys.stdout.write(s)
         sys.stdout.flush()
 
-class OracleCmd(cmd.Cmd):
+#-----------------------------------------------------------------------
+def termcols():
+    """how many columns on our screen?"""
+    # hmm doesn't seem to honor a resized screen
+    x=int(os.popen('tput cols').readline())
+    return x
 
+#-----------------------------------------------------------------------
+def termlines():
+    """how many lines on our screen?"""
+    # hmm doesn't seem to honor a resized screen
+    x=int(os.popen('tput lines').readline())
+    return x
+
+class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def __init__(self,connstr,sysdba):
         """OracleCmd init"""
@@ -124,7 +136,6 @@ class OracleCmd(cmd.Cmd):
                 self.helptext += line+'\n'
 
         self.cmd=''
-        self.do_rehash()
         self.do_mono()
         signal.signal(signal.SIGTSTP, signal.SIG_DFL)
 
@@ -233,6 +244,26 @@ class OracleCmd(cmd.Cmd):
             self.default0(line)
 
     #-------------------------------------------------------------------
+    def ltabs(self):
+        """"tmp test of local tables"""
+        mcurs=self.conn.cursor()
+        mcurs.execute("""select unique table_name
+                           from user_tab_cols
+                         order by table_name""")
+        rr=mcurs.fetchall()
+        return [x[0] for x in rr]
+
+    #-------------------------------------------------------------------
+    def lcols(self):
+        """"tmp test of local tables"""
+        mcurs=self.conn.cursor()
+        mcurs.execute("""select unique column_name
+                           from user_tab_cols
+                         order by column_name""")
+        rr=mcurs.fetchall()
+        return [x[0] for x in rr]
+
+    #-------------------------------------------------------------------
     def emptyline(self):
         """ignore empty lines"""
         pass
@@ -255,15 +286,15 @@ class OracleCmd(cmd.Cmd):
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
                 #tables
                 #add order by, where
-                self.tmpcomp=[i for i in self.ltabs if i.startswith(text)]
+                self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
             elif re.search(r'^\s*desc\s+$',fullcmd,re.I|re.S):
                 #tables
                 #add order by, where
-                self.tmpcomp=[i for i in self.ltabs if i.startswith(text)]
+                self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
             else:
                 #columns
                 #add from
-                self.tmpcomp=[i for i in self.lcols if i.startswith(text)]
+                self.tmpcomp=[i for i in self.lcols() if i.startswith(text)]
         if state < len(self.tmpcomp):
             rv=self.tmpcomp[state]
         else:
@@ -320,17 +351,28 @@ class OracleCmd(cmd.Cmd):
         P(self.helptext)
 
     #-------------------------------------------------------------------
-    def do_refresh(self,s):
-        """refresh cached stuff"""
-        P('TODO: INVESTIGATE RECACHE')
-        P('TODO: CLEAN THIS UP')
-        P(self.ltabs)
-
-    #-------------------------------------------------------------------
     def do_tables(self,s):
         """print a list of the tables"""
-        P('TODO: CLEAN THIS UP')
-        P(str(self.ltabs))
+        t=self.ltabs()
+        n=len(t)
+        mx=0
+        for i in t:
+            if len(i) > mx:
+                mx=len(i)
+        ncols=77/(mx+1)
+        nrows=n/ncols
+        rem=n-(nrows*ncols)
+        fmt='%%-%ds'%(mx)
+        for r in range(nrows):
+            for c in range(ncols):
+                P0(fmt%(t[r*ncols+c]))
+                if c != ncols:
+                    P0(' ')
+            P('')
+        r+=1
+        for c in range(rem):
+            P0(fmt%(t[r*ncols+c]))
+        P('')
 
     #-------------------------------------------------------------------
     def do_blockers(self,s):
@@ -688,22 +730,6 @@ class OracleCmd(cmd.Cmd):
     def do_color(self,s=None):
         """set color output"""
         self.colors=['\033[0m','\033[36m','\033[0m']
-
-    #-------------------------------------------------------------------
-    def do_rehash(self,s=None):
-        # TODO: nuke this, make it always dynamic?
-        """(re)populate the user's tables/columns"""
-        self.xtabs=collections.defaultdict(list)
-        self.xcols=collections.defaultdict(list)
-
-        self.curs.execute("""select lower(table_name),lower(column_name)
-                             from user_tab_cols""")
-        for (tt,cc) in self.curs:
-            self.xtabs[tt].append(cc)
-            self.xcols[cc].append(tt)
-        self.ltabs=[i for i in self.xtabs.keys()]; self.ltabs.sort()
-        self.lcols=[i for i in self.xcols.keys()]; self.lcols.sort()
-        #self.desc[tblname]=...
 
 #-----------------------------------------------------------------------
 def lookupAlias(s):
