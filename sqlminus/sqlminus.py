@@ -25,6 +25,9 @@ special commands:
     blockers  : show blocking sessions (works on RAC)
     info      : print random information about the connection
     du        : print disk usage
+  jobs:
+    job1      : TODO: figure this out
+    job2      : TODO: figure this out
   performance:
     explain   : display an execution plan
   context full text:
@@ -276,7 +279,7 @@ class OracleCmd(cmd.Cmd):
             self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-----------------------------------------------------------------------
-    def do_jobs(self,s):
+    def do_jobsold(self,s):
         """print all oracle jobs"""
         q="""select job,what,last_date,next_date from dba_jobs"""
         self.curs.execute(q)
@@ -587,6 +590,48 @@ class OracleCmd(cmd.Cmd):
                                     options, object_name, position
                                from sqlminus_ctexplain
                                order by id""")
+        self.oraprint(self.curs.description,self.curs.fetchall())
+
+    #-------------------------------------------------------------------
+    def do_jobs(self,s):
+
+        other="""
+        select owner||'.'||job_name job,log_date,status,error#,instance_id  
+          from dba_SCHEDULER_JOB_run_details 
+         where job_name = upper(:1)
+      order by log_date, owner_jobname"""
+
+        Q1="""
+        select owner||'.'||job_name job,job_type type,
+            state,enabled,failure_count fails,
+            substr(trunc(last_start_date,'MI'),1,15) as start,
+            substr(trunc(next_run_date,'MI'),1,15) as bbb,
+            nvl(instance_id, 0) as inst,
+            repeat_interval,
+            case when length(job_action) < 300 or job_action is null
+                then job_action
+                else '*** Too long to display here ***' end as ddd,
+        999 as zzz
+        from dba_scheduler_jobs
+        order by owner||'.'||job_name
+        """
+
+        Q1="""
+        select job_name job,job_type type,
+            state,enabled,failure_count fails,
+            substr(trunc(last_start_date,'MI'),1,15) as starts,
+            substr(trunc(next_run_date,'MI'),1,15) as last,
+            nvl(instance_id, 0) as inst,
+            repeat_interval,
+            case when length(job_action) < 300 or job_action is null
+                then job_action
+                else '*** Too long to display here ***' end as text
+        from dba_scheduler_jobs
+        where owner=sys_context('USERENV','CURRENT_SCHEMA')
+        order by job_name
+        """
+
+        self.curs.execute(Q1)
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
