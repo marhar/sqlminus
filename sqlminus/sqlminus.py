@@ -279,8 +279,11 @@ class OracleCmd(cmd.Cmd):
         """
         D('X s=<%s>'%(s))
         D(self.lcols(s))
+        D(self.lcols(s))
 
     #-------------------------------------------------------------------
+    ltabCache={}
+    ltabCacheTm={}
     def ltabs(self,prefix0=None):
         """tmp test of local tables"""
         #---------------------------------------------------------------
@@ -288,8 +291,15 @@ class OracleCmd(cmd.Cmd):
         # - also needs to aliases?
         #---------------------------------------------------------------
 
+        CACHE_TIMEOUT = 30
+
         if prefix0 is None:
             prefix0=''
+
+        if self.ltabCacheTm.has_key(prefix0):
+            dt=time.time()-self.ltabCacheTm[prefix0]
+            if dt < CACHE_TIMEOUT:
+                return self.ltabCache[prefix0]
 
         pa=prefix0.split('.')
         if len(pa) == 1:
@@ -316,11 +326,24 @@ class OracleCmd(cmd.Cmd):
 
         rr=mcurs.fetchall()
         rv=[x[0] for x in rr]
+        self.ltabCache[prefix0]=rv
+        self.ltabCacheTm[prefix0]=time.time()
         return rv
 
     #-------------------------------------------------------------------
+    lcolCache={}
+    lcolCacheTm={}
     def lcols(self,prefix=None):
         """"column names"""
+
+        CACHE_TIMEOUT = 30
+
+        # TODO: lcolCache not yet working
+        if self.lcolCacheTm.has_key(prefix):
+            dt=time.time()-self.lcolCacheTm[prefix]
+            if dt < CACHE_TIMEOUT:
+                D('cached '+str(dt))
+                return self.lcolCache[prefix]
 
         user=self.conn.username
         user=user.upper()
@@ -342,7 +365,10 @@ class OracleCmd(cmd.Cmd):
                              order by column_name""",[user,prefix])
         rr=mcurs.fetchall()
         rv=[x[0] for x in rr]
-        return [x[0] for x in rr]
+        self.lcolCache[prefix]=rv
+        self.lcolCacheTm[prefix]=time.time()
+        D('read  ')
+        return rv
 
     #-------------------------------------------------------------------
     def emptyline(self):
@@ -363,24 +389,17 @@ class OracleCmd(cmd.Cmd):
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
             fullcmd=self.cmd+buf
-            D('--')
-            D('fullcmd <%s>'%(fullcmd))
-            D('complete <%s> %d'%(text,state))
             if re.search(r'^\s*$',fullcmd,re.I|re.S):
                 #cmds
-                D('cmds')
                 self.tmpcomp=[i for i in self.cmds if i.startswith(text)]
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
                 #tables
-                D('tab1')
                 self.tmpcomp=[i for i in self.ltabs(text)]
             elif re.search(r'^\s*desc\s+$',fullcmd,re.I|re.S):
                 #tables
-                D('tab2')
                 self.tmpcomp=[i for i in self.ltabs(text)]
             else:
                 #columns
-                D('col')
                 self.tmpcomp=[i for i in self.lcols(text)]
         # added the if True, which is incorrect but eliminates a tabpress
         if True or state < len(self.tmpcomp):
