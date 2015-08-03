@@ -68,44 +68,42 @@ import traceback,getpass,shlex,subprocess,cx_Oracle
 #-----------------------------------------------------------------------
 def P(s):
     """print and flush, with newline"""
-    P0(s+'\n')
+    P0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
 def P0(s):
     """print and flush, no newline"""
-    sys.stdout.write(s)
+    sys.stdout.write(str(s))
     sys.stdout.flush()
 
 #-----------------------------------------------------------------------
 dbgfd=None
 def D0(s):
     """debug output, no newline"""
-    s=str(s)
     global dbgfd
     if dbgfd is None:
         dbgfd=open('/tmp/sqlminus.dbg','a')
         D('================================================== DBGFD')
-    dbgfd.write(s)
+    dbgfd.write(str(s))
     dbgfd.flush()
 
 #-----------------------------------------------------------------------
 def D(s):
     """debug output with newline."""
-    s=str(s)
-    D0(s+'\n')
+    D0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
 print_is_quiet = False
 def V0(s):
     """verbose print and flush, no newline. --quiet to supress"""
     if print_is_quiet is False:
-        sys.stdout.write(s)
+        sys.stdout.write(str(s))
         sys.stdout.flush()
 
 #-----------------------------------------------------------------------
 def V(s):
     """verbose print and flush, with newline. --quiet to supress"""
-    V0(s+'\n')
+    V0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
 def termRowsCols():
@@ -280,7 +278,7 @@ class OracleCmd(cmd.Cmd):
         self.run()
         """
         D('X s=<%s>'%(s))
-        self.ltabs(s)
+        D(self.lcols(s))
 
     #-------------------------------------------------------------------
     def ltabs(self,prefix0=None):
@@ -306,13 +304,13 @@ class OracleCmd(cmd.Cmd):
         if prefix == '':
             mcurs.execute("""select unique table_name
                                from all_tab_cols
-                              where upper(owner) = upper(:1)
+                              where owner = :1
                              order by table_name""",[user])
         else:
             prefix=prefix.upper()+'%'
             mcurs.execute("""select unique table_name
                                from all_tab_cols
-                              where upper(owner) = upper(:1)
+                              where owner = :1
                                 and upper(table_name) like :2
                              order by table_name""", [user,prefix])
 
@@ -321,13 +319,29 @@ class OracleCmd(cmd.Cmd):
         return rv
 
     #-------------------------------------------------------------------
-    def lcols(self):
-        """"tmp test of local tables"""
+    def lcols(self,prefix=None):
+        """"column names"""
+
+        user=self.conn.username
+        user=user.upper()
+
+        prefix=prefix.upper()+'%'
+
         mcurs=self.conn.cursor()
-        mcurs.execute("""select unique column_name
-                           from user_tab_cols
-                         order by column_name""")
+        # TODO: can these executes be made into one?
+        if prefix is None or prefix == '':
+            mcurs.execute("""select unique column_name
+                               from all_tab_cols
+                              where owner = :1
+                             order by column_name""",[user])
+        else:
+            mcurs.execute("""select unique column_name
+                               from all_tab_cols
+                              where owner = :1
+                                and column_name like :2
+                             order by column_name""",[user,prefix])
         rr=mcurs.fetchall()
+        rv=[x[0] for x in rr]
         return [x[0] for x in rr]
 
     #-------------------------------------------------------------------
@@ -343,8 +357,8 @@ class OracleCmd(cmd.Cmd):
            and tables.
         """
         # TODO: BUG: sometimes needs a couple of extra tab presses
-        # gives lots of extra states,
-        # something I don't understand and need to figure out
+        #            gives lots of extra states,
+        #            something I don't understand and need to figure out
         if state == 0:
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
@@ -358,21 +372,18 @@ class OracleCmd(cmd.Cmd):
                 self.tmpcomp=[i for i in self.cmds if i.startswith(text)]
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
                 #tables
-                #add order by, where
-                #self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
                 D('tab1')
                 self.tmpcomp=[i for i in self.ltabs(text)]
             elif re.search(r'^\s*desc\s+$',fullcmd,re.I|re.S):
                 #tables
-                #add order by, where
                 D('tab2')
-                self.tmpcomp=[i for i in self.ltabs() if i.startswith(text)]
+                self.tmpcomp=[i for i in self.ltabs(text)]
             else:
                 #columns
-                #add from
                 D('col')
-                self.tmpcomp=[i for i in self.lcols() if i.startswith(text)]
-        if state < len(self.tmpcomp):
+                self.tmpcomp=[i for i in self.lcols(text)]
+        # added the if True, which is incorrect but eliminates a tabpress
+        if True or state < len(self.tmpcomp):
             rv=self.tmpcomp[state]
         else:
             rv=None
