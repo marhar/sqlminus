@@ -124,6 +124,12 @@ def termRows():
     """how many rows on our screen?"""
     return termRowsCols()[0]
 
+#-------------------------------------------------------------------
+def resize_terminal(xlen,force=False):
+    """EXPERIMENTAL set the terminal width"""
+    if force or xlen > termCols():
+        P0('\033[8;25;%dt'%(xlen))
+
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def __init__(self,connstr,sysdba):
@@ -159,6 +165,13 @@ class OracleCmd(cmd.Cmd):
         self.cmd=''
 
     #-------------------------------------------------------------------
+    def do_sane(self,s):
+        """EXPERIMENTAL set the terminal width to a sane value"""
+        if s is None or s == '':
+            s="80"
+        resize_terminal(int(s),force=True)
+
+    #-------------------------------------------------------------------
     def oraprint(self,desc,rows):
         """nicely print a query result set"""
         # get the max width and type of each column,
@@ -185,6 +198,7 @@ class OracleCmd(cmd.Cmd):
 
         # header
         line=fmt0%tuple([i[0].lower() for i in desc])
+        resize_terminal(len(line))
         P(line)
         P(re.sub('[^ ]','-',line))
 
