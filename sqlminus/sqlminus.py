@@ -129,6 +129,22 @@ def resize_terminal(xlen,force=False):
         if force or xlen > termCols():
             P0('\033[8;25;%dt'%(xlen))
 
+def resize_font(sz):
+    """EXPERIMENTAL MAC-ONLY resize the font of our window"""
+    weird_applescript="""
+        tell application "System Events" to tell application "Finder"
+            tell process "Terminal"
+                set frontmost to true
+            end tell
+        end tell
+
+        tell application "Terminal"
+            set font size of first window to "%d"
+        end tell
+    """
+    fd=os.popen('osascript','w')
+    fd.write(weird_applescript%(sz))
+
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def __init__(self,connstr,sysdba):
@@ -294,6 +310,11 @@ class OracleCmd(cmd.Cmd):
         D('X s=<%s>'%(s))
         D(self.lcols(s))
         D(self.lcols(s))
+        resize_font(5)
+        time.sleep(2)
+        resize_font(25)
+        time.sleep(2)
+        resize_font(12)
 
     #-------------------------------------------------------------------
     ltabCache={}
