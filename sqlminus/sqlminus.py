@@ -122,10 +122,12 @@ def termRows():
     return termRowsCols()[0]
 
 #-------------------------------------------------------------------
+experimental_resize=False
 def resize_terminal(xlen,force=False):
     """EXPERIMENTAL set the terminal width"""
-    if force or xlen > termCols():
-        P0('\033[8;25;%dt'%(xlen))
+    if experimental_resize:
+        if force or xlen > termCols():
+            P0('\033[8;25;%dt'%(xlen))
 
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
@@ -160,6 +162,18 @@ class OracleCmd(cmd.Cmd):
     def clearinput(self):
         """clear the input state"""
         self.cmd=''
+
+    #-------------------------------------------------------------------
+    def do_resize(self,s):
+        """EXPERIMENTAL turn resize on or off"""
+        s=s.strip(';')
+        global experimental_resize
+        if s == 'on':
+            experimental_resize=True
+            print 'resize on'
+        else:
+            experimental_resize=False
+            print 'resize off'
 
     #-------------------------------------------------------------------
     def do_sane(self,s):
@@ -860,7 +874,7 @@ def main():
          -- Ed Sheeran
     """
     P('--------------------------------------------------')
-    P('| Welcome to sqlminus v2.1                       |')
+    P('| Welcome to sqlminus v2.3                       |')
     P('| docs at: https://github.com/marhar/sqlminus    |')
     P('| type "help" for help                           |')
     P('--------------------------------------------------')
