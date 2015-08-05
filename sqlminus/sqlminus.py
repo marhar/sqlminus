@@ -5,50 +5,16 @@ sqlminus -- sqlplus minus. the features? the suck? you be the judge!
 usage:
     sqlminus [--sysdba] connstr          - interactive shell
     sqlminus [--sysdba] connstr  cmds... - execute cmds
-    sqlminus [--sysdba] connstr  @file   - execute cmd in file.sql
+    sqlminus [--sysdba] connstr  @file   - execute cmds in file.sql
     sqlminus [--sysdba] connstr
     (note: @ and --file stuff in flux and subject to change)
 
 configuration:
     ~/.sqlminus holds connstr aliases.  format:   foo = 'foo/bar@baz'
 
-special commands:
-  display:
-    color     : color display mode
-    mono      : monochrome display mode
-  execution:
-    exec      : execute a procedure
-    calls     : call a function returning a varchar2
-    callc     : call a function returning a clob
-    calln     : call a function returning a number
-  sysinfo:
-    blockers  : show blocking sessions (works on RAC)
-    info      : print random information about the connection
-    du        : print disk usage
-  jobs:
-    jobs      : list jobs for this user
-    jobhist   : list history for a particular job
-  performance:
-    explain   : display an execution plan
-  context full text:
-    ctexplain : display a ctx execution plan
-    ctls      : display context indices
-  development:
-    ddl       : show ddl for object
-    desc      : describe an object
-    fkeys     : show nested child foreign key dependencies for a table
-    tables    : list all user tables
-    sqlid     : given sqlid, print sql statement (works on RAC)
-    tron      : turn on dbms_output
-    troff     : turn off dbms_output
-  misc:
-    nullstr   : set the value displayed for the null string
-    help      : print this help text
-
 features:
     readline editing
-    saves readline data across sessions
-    (semi)intelligent tab completion for tables, columns
+    (semi)smart tab completion for tables, columns
     nice table formatting
     single file, easy to install
 
@@ -58,8 +24,6 @@ author:
 
 license and download:
     bsd-ish.  see orapig package for complete text.
-    sqlminus is part of the orapig package.  It has eclipsed its
-    siblings so now orapig is part of the sqlminus package.
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
@@ -163,13 +127,6 @@ class OracleCmd(cmd.Cmd):
         self.curs = self.conn.cursor()
         self.nullstr = '-';
         self.cmds=[]
-        self.helptext=''
-        for line in __doc__.split('\n'):
-            words=line.split()
-            if len(words) > 1 and words[1]==':':
-                self.cmds.append(words[0])
-                self.helptext += line+'\n'
-
         self.cmd=''
         self.do_mono()
         signal.signal(signal.SIGTSTP, signal.SIG_DFL)
@@ -181,7 +138,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_resize(self,s):
-        """EXPERIMENTAL turn resize on or off"""
+        """screen: turn resize on or off EXPERIMENTAL"""
         s=s.strip(';')
         global experimental_resize
         if s == 'on':
@@ -193,7 +150,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_sane(self,s):
-        """EXPERIMENTAL set the terminal width to a sane value"""
+        """screen: set the terminal width to a sane value EXPERIMENTAL"""
         s=s.strip(';')
         if s is None or s == '':
             s="80"
@@ -301,7 +258,7 @@ class OracleCmd(cmd.Cmd):
 
     #-----------------------------------------------------------------------
     def do_x(self,s):
-        """for internal testing"""
+        """INTERNAL: for internal testing"""
         pass
         examples="""
         self.cmd='select 2+2 four from dual;'
@@ -452,13 +409,13 @@ class OracleCmd(cmd.Cmd):
 
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
-        """set the null string"""
+        """query: set the null string"""
         self.nullstr=s;
         P('null string set to "%s"'%(self.nullstr))
 
     #-----------------------------------------------------------------------
     def do_du(self,s):
-        """print disk usage"""
+        """admin: print disk usage"""
         q="""select owner,tablespace_name,sum(bytes)/(1024*1024) mbytes
                from dba_segments
                 group by owner, tablespace_name
@@ -472,7 +429,7 @@ class OracleCmd(cmd.Cmd):
 
     #-----------------------------------------------------------------------
     def do_sqlid(self,s):
-        """print text for sql id"""
+        """devel: print text for sql id"""
 
         #TODO: fix split returns != 2 len
         try:
@@ -490,12 +447,33 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_help(self,s):
-        """print some help stuff"""
-        P(self.helptext)
+        """sqlminus: print some help stuff"""
+
+        import types,collections
+        funclist=[x[3:] for x,y in OracleCmd.__dict__.items()
+                  if type(y) == types.FunctionType
+                   and x.startswith('do_')]
+        mxlen=max([len(f) for f in funclist])
+        
+        helptext={}
+        categories=collections.defaultdict(list)
+
+        for f in funclist:
+            hh=OracleCmd.__dict__['do_'+f].__doc__.split(':')
+            categories[hh[0]].append(f)
+            helptext[f]=hh[1].strip()
+            
+        del(categories['INTERNAL'])
+        P(__doc__)
+        P('commands:')
+        for k in sorted(categories.keys()):
+            P('  %s'%(k))
+            for f in sorted(categories[k]):
+                P('    %*s : %s'%(mxlen,f,helptext[f]))
 
     #-------------------------------------------------------------------
     def do_tables(self,s):
-        """print a list of the tables"""
+        """query: print a list of the tables"""
         t=self.ltabs()
         n=len(t)
         mx=0
@@ -519,7 +497,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_blockers(self,s):
-        """show any blockers (on a RAC)"""
+        """admin: show any blockers (on a RAC)"""
         q="""
         SELECT /*+ ORDERED USE_NL(l,s) */
           l.inst_id,DECODE(l.request,0,'HOLD','Wait') stat,
@@ -549,7 +527,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_info(self,s):
-        """print some info about the connection"""
+        """sqlminus: print some info about the connection"""
         cv='.'.join([str(x) for x in cx_Oracle.clientversion()])
         P('client:')
         P('                 pid : %s'%(os.getpid()))
@@ -581,7 +559,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_desc(self,s):
-        """describe an object"""
+        """devel: describe an object"""
         # this version depends on all_* views.  should we fall back
         # to user_* if that's not available?
         s=s.strip(';')
@@ -624,7 +602,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_fkeys(self,s):
-        """show foreign key children of a table"""
+        """devel: show foreign key children of a table"""
         # thank you stack!!
         # http://dba.stackexchange.com/questions/96858
         # Note that it requires 11.2 due to the use of listagg()
@@ -674,7 +652,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_ddl(self,s):
-        """show ddl for an object"""
+        """devel: show ddl for an object"""
 
         s=s.strip(';')
         if len(s.split()) != 1:
@@ -721,18 +699,18 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_EOF(self,s):
-        """goodbye -- surely there's a better way to catch eof??"""
+        """INTERNAL: surely there's a better way to catch eof??"""
         P('')
         sys.exit(0);
 
     #-------------------------------------------------------------------
     def do_ctls(self,s):
-        """list context indices"""
+        """devel: list context indices"""
         P('    NOT IMPLEMENTED YET...')
 
     #-------------------------------------------------------------------
     def do_ctexplain(self,s):
-        """explain a ctx search"""
+        """devel: explain a ctx search"""
         x=shlex.split(s)
         if len(x) != 2:
             P('usage: ctexplain index query')
@@ -771,7 +749,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_jobs(self,s):
-        """list jobs for this user"""
+        """devel: list jobs for this user"""
         self.curs.execute("""
             select job_name job,job_type type,
                 state,enabled,failure_count fails,
@@ -789,7 +767,7 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_jobhist(self,s):
-        """list history for the job"""
+        """devel: list history for the job"""
         s=s.strip(';')
         av=s.split()
         if len(av) != 1:
@@ -805,19 +783,19 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_exec(self,s):
-        """execute a procedure"""
+        """query: execute a procedure"""
         self.cmd = 'begin %s; end;;'%(s.rstrip('; '))
         self.run()
 
     #-------------------------------------------------------------------
     def do_tron(self,s):
-        """turn on dbms_output"""
+        """devel: turn on dbms_output"""
         self.curs.execute("""begin dbms_output.enable; end;""")
         P('dbms_output enabled')
 
     #-------------------------------------------------------------------
     def do_troff(self,s):
-        """turn off dbms_output"""
+        """devel: turn off dbms_output"""
         self.curs.execute("""begin dbms_output.disable; end;""")
         P('dbms_output disabled')
 
@@ -850,28 +828,28 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_calln(self,s):
-        """call a function returning a number"""
+        """query: call a function returning a number"""
         # TODO: get precision?
         self._call(self.curs.var(cx_Oracle.NUMBER), s)
 
     #-------------------------------------------------------------------
-    def do_calls(self,s):
-        """call a function returning a varchar2"""
+    def do_callv(self,s):
+        """query: call a function returning a varchar2"""
         self._call(self.curs.var(cx_Oracle.STRING), s)
 
     #-------------------------------------------------------------------
     def do_callc(self,s):
-        """call a function returning a clob"""
+        """query: call a function returning a clob"""
         self._call(self.curs.var(cx_Oracle.CLOB), s)
 
     #-------------------------------------------------------------------
     def do_mono(self,s=None):
-        """set monochrome output"""
+        """screen: set monochrome output"""
         self.colors=['','','']
 
     #-------------------------------------------------------------------
     def do_color(self,s=None):
-        """set color output"""
+        """screen: set color output"""
         self.colors=['\033[0m','\033[36m','\033[0m']
 
 #-----------------------------------------------------------------------
