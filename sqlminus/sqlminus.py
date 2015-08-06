@@ -889,6 +889,17 @@ def main():
         sys.exit(1)
 
     connstr=lookupAlias(items[0])
+
+    # if there's no '/', we need to get a password
+    if connstr.find('/') == -1:
+        import getpass
+        passwd=getpass.getpass('passwd: ')
+        ix=connstr.find('@')
+        if ix == -1:
+            connstr=connstr+'/'+passwd
+        else:
+            connstr=connstr[:ix]+'/'+passwd+connstr[ix:]
+
     connstr2=re.sub('/.*@','@',connstr)
 
     P('connecting to %s...'%(connstr2))
