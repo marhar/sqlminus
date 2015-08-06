@@ -143,10 +143,10 @@ class OracleCmd(cmd.Cmd):
         global experimental_resize
         if s == 'on':
             experimental_resize=True
-            print 'resize on'
+            P('resize on')
         else:
             experimental_resize=False
-            print 'resize off'
+            P('resize off')
 
     #-------------------------------------------------------------------
     def do_sane(self,s):
@@ -866,7 +866,20 @@ def lookupAlias(s):
     return s
 
 #-----------------------------------------------------------------------
+def fixpassword(connstr):
+    """if this connect string doesn't have a passwd, add one to it"""
+    # if there's no '/', we need to get a password
+    if connstr.find('/') == -1:
+        import getpass
+        passwd=getpass.getpass('password: ')
+        ix=connstr.find('@')
+        if ix == -1:
+            connstr=connstr+'/'+passwd
+        else:
+            connstr=connstr[:ix]+'/'+passwd+connstr[ix:]
+    return connstr
 
+#-----------------------------------------------------------------------
 def main():
     """The MAIN thing that you have to remember on this journey is,
        just be nice to everyone and always smile.
@@ -889,25 +902,31 @@ def main():
         sys.exit(1)
 
     connstr=lookupAlias(items[0])
-
-    # if there's no '/', we need to get a password
-    if connstr.find('/') == -1:
-        import getpass
-        passwd=getpass.getpass('passwd: ')
-        ix=connstr.find('@')
-        if ix == -1:
-            connstr=connstr+'/'+passwd
-        else:
-            connstr=connstr[:ix]+'/'+passwd+connstr[ix:]
-
     connstr2=re.sub('/.*@','@',connstr)
+
+    # does the user need to type a password?  maybe or maybe not,
+    # since there might be an oracle wallet.  So, instead of trying
+    # to intelligently figure things out, we try connecting and if
+    # we get an ORA-1017 or ORA-1262 (both of which could indicate
+    # a bad password we'll prompt for the password and try again.
 
     P('connecting to %s...'%(connstr2))
     try:
         cc=OracleCmd(connstr,args.sysdba)
     except cx_Oracle.DatabaseError,e:
-        P(str(e))
-        sys.exit(1)
+        err,=e
+        if err.code in (1017,12162):
+            connstr=fixpassword(connstr)
+            connstr2=re.sub('/.*@','@',connstr)
+            try:
+                cc=OracleCmd(connstr,args.sysdba)
+            except cx_Oracle.DatabaseError,e:
+                P(str(e))
+                sys.exit(1)
+        else:
+                P(str(e))
+                sys.exit(1)
+
     if os.isatty(sys.stdin.fileno()):
         cc.connstr2=connstr2
         cc.prompt=cc.connstr2+'> '
