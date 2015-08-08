@@ -1,4 +1,3 @@
-#!/usr/bin/env /usr/local/sqlminus/bin/python
 """
 sqlminus -- sqlplus minus. the features? the suck? you be the judge!
 
@@ -14,7 +13,7 @@ configuration:
 
 features:
     readline editing
-    (semi)smart tab completion for tables, columns
+    smart tab completion for tables, columns
     nice table formatting
     single file, easy to install
 
@@ -359,7 +358,6 @@ class OracleCmd(cmd.Cmd):
         rv=[x[0] for x in rr]
         self.lcolCache[prefix]=rv
         self.lcolCacheTm[prefix]=time.time()
-        D('read  ')
         return rv
 
     #-------------------------------------------------------------------
@@ -369,29 +367,28 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def complete(self, text, state):
-        """cmd line completion.  couldn't get completedefault() to
-           work, so just overwrite the entire completer.  by context,
-           it tries to figure out when your typing sql, columns,
-           and tables.
+        """cmd line completion.  overrides default completer
+           entirely so we can handle tables and columns by context.
         """
-        # TODO: BUG: sometimes needs a couple of extra tab presses
-        #            gives lots of extra states,
-        #            something I don't understand and need to figure out
         if state == 0:
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
             fullcmd=self.cmd+buf
             if re.search(r'^\s*$',fullcmd,re.I|re.S):
-                #cmds
+                # "word" no spaces
+                # cmds
                 self.tmpcomp=[i for i in self.cmds if i.startswith(text)]
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
-                #tables
+                # word, spaces "from" spaces
+                # tables
                 self.tmpcomp=[i for i in self.ltabs(text)]
             elif re.search(r'^\s*desc\s+$',fullcmd,re.I|re.S):
-                #tables
+                # word "desc" spaces
+                # tables
                 self.tmpcomp=[i for i in self.ltabs(text)]
             else:
-                #columns
+                # anything else
+                # columns
                 self.tmpcomp=[i for i in self.lcols(text)]
         # added the if True, which is incorrect but eliminates a tabpress
         if True or state < len(self.tmpcomp):
