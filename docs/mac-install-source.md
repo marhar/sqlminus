@@ -24,6 +24,10 @@ Downloads
 
 Put these all in $TOP/dist
 
+I've got copies of everything I used here:
+
+http://markharrison.net/sqlminus/source-packages
+
 Oracle Instantclient 11
 -----------------------
 

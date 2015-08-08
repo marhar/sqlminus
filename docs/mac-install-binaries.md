@@ -7,7 +7,9 @@ cx_Oracle and sqlminus.  No guarantees, but "it works for me".
 download the tar file
 ---------------------
 
-   http://markharrison.net/sqlminus/sqlminus-2.1-macos-10.9.tgz
+The lastest tarball is here:
+
+   http://markharrison.net/sqlminus
 
 cd to the root directory
 ------------------------
@@ -17,7 +19,7 @@ cd to the root directory
 untar the file
 --------------
 
-    sudo tar xzf ~/Downloads/sqlminus-2.1-macos-10.9.tgz
+    sudo tar xzf ~/Downloads/sqlminus.current-macos.tgz
 
 test
 ----

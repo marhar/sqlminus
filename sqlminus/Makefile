@@ -17,6 +17,8 @@ package:
 
 upload:
 	scp /tmp/$(TARBALL) mhn:public_html/sqlminus
+	scp sqlminus mhn:public_html/sqlminus/source-packages
+	scp sqlminus.py mhn:public_html/sqlminus/source-packages
 
 cmp:
 	@-cmp sqlminus    $(TOP)/bin/sqlminus
