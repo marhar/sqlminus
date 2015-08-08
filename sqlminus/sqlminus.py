@@ -1,6 +1,10 @@
 """
-sqlminus -- sqlplus minus. the features? the suck? you be the judge!
+sqlminus -- sqlplus minus. the features? minus the suck? you be the judge!
 
+    https://github.com/marhar/sqlminus : docs and download
+    Mark Harrison, marhar@gmail.com    : share and enjoy!
+"""
+usage_help="""
 usage:
     sqlminus [--sysdba] connstr          - interactive shell
     sqlminus [--sysdba] connstr  cmds... - execute cmds
@@ -16,17 +20,10 @@ features:
     smart tab completion for tables, columns
     nice table formatting
     single file, easy to install
-
-author:
-    Mark Harrison, marhar@gmail.com
-    https://github.com/marhar/sqlminus
-
-license and download:
-    bsd-ish.  see orapig package for complete text.
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
-import traceback,getpass,shlex,subprocess,cx_Oracle
+import traceback,getpass,shlex,subprocess,types,cx_Oracle
 
 #-----------------------------------------------------------------------
 def P(s):
@@ -130,26 +127,34 @@ class OracleCmd(cmd.Cmd):
         self.do_mono()
         signal.signal(signal.SIGTSTP, signal.SIG_DFL)
 
-    #-------------------------------------------------------------------
+    #------------------------------------------------------------------
     def clearinput(self):
         """clear the input state"""
         self.cmd=''
 
     #-------------------------------------------------------------------
     def do_resize(self,s):
-        """screen: turn resize on or off EXPERIMENTAL"""
+        """terminal: turn resize on or off EXPERIMENTAL"""
         s=s.strip(';')
         global experimental_resize
         if s == 'on':
             experimental_resize=True
             P('resize on')
-        else:
+        elif s == 'off':
             experimental_resize=False
             P('resize off')
+        elif s == '':
+            if experimental_resize:
+                w='off'
+            else:
+                w='on'
+            P('resize is %s'%(w))
+        else:
+            P('    usage: resize [on|off]')
 
     #-------------------------------------------------------------------
     def do_sane(self,s):
-        """screen: set the terminal width to a sane value EXPERIMENTAL"""
+        """terminal: set the terminal width to a sane value EXPERIMENTAL"""
         s=s.strip(';')
         if s is None or s == '':
             s="80"
@@ -239,7 +244,7 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def default(self,s):
         """preprocess a line of input"""
-        ########################################## add to history here
+        ########################### add to history here if possible?
         if re.search('^ *@',s):
             fn=s.split()[0] # get fn
             fn=fn[1:]        # chop @
@@ -361,6 +366,21 @@ class OracleCmd(cmd.Cmd):
         return rv
 
     #-------------------------------------------------------------------
+    def lcmds(self,prefix=None):
+        """command names"""
+        sqlcmds=['select','insert','delete','update']
+        internals=['do_EOF','do_x'] # TODO: introspect this
+        if prefix is None:
+            rv=[s for s in sqlcmds]
+        else:
+            rv=[s for s in sqlcmds if s.startswith(prefix)]
+        for i in dir(self):
+            if i not in internals and \
+               i.startswith('do_') and callable(getattr(self,i)):
+                rv.append(i[3:])
+        return sorted(rv)
+
+    #-------------------------------------------------------------------
     def emptyline(self):
         """ignore empty lines"""
         pass
@@ -374,10 +394,11 @@ class OracleCmd(cmd.Cmd):
             buf=readline.get_line_buffer()
             buf=buf[:readline.get_begidx()]
             fullcmd=self.cmd+buf
-            if re.search(r'^\s*$',fullcmd,re.I|re.S):
+            if re.search(r'^\s*$',fullcmd,re.I|re.S) or \
+               re.search(r'^help\s+$',fullcmd,re.I|re.S):
                 # "word" no spaces
                 # cmds
-                self.tmpcomp=[i for i in self.cmds if i.startswith(text)]
+                self.tmpcomp=[i for i in self.lcmds() if i.startswith(text)]
             elif re.search(r'^.*\s+from\s+$',fullcmd,re.I|re.S):
                 # word, spaces "from" spaces
                 # tables
@@ -390,7 +411,9 @@ class OracleCmd(cmd.Cmd):
                 # anything else
                 # columns
                 self.tmpcomp=[i for i in self.lcols(text)]
+
         # added the if True, which is incorrect but eliminates a tabpress
+        # TODO: ???need to figure out if this is still true???
         if True or state < len(self.tmpcomp):
             rv=self.tmpcomp[state]
         else:
@@ -404,11 +427,38 @@ class OracleCmd(cmd.Cmd):
             self.curs.execute(cmd)
             self.oraprint(self.curs.description,self.curs.fetchall())
 
+    #-------------------------------------------------------------------
+    def do_select(self,s):
+        """query: select ..."""
+        # this is so help will work
+        self.default('select '+s)
+
+    #-------------------------------------------------------------------
+    def do_insert(self,s):
+        """query: insert ..."""
+        # this is so help will work
+        self.default('insert '+s)
+
+    #-------------------------------------------------------------------
+    def do_update(self,s):
+        """query: update ..."""
+        # this is so help will work
+        self.default('update '+s)
+
+    #-------------------------------------------------------------------
+    def do_delete(self,s):
+        """query: delete ..."""
+        # this is so help will work
+        self.default('delete '+s)
+
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
         """query: set the null string"""
-        self.nullstr=s;
-        P('null string set to "%s"'%(self.nullstr))
+        if s == '':
+            P('null string is "%s"'%(self.nullstr))
+        else:
+            self.nullstr=s;
+            P('null string set to "%s"'%(self.nullstr))
 
     #-----------------------------------------------------------------------
     def do_du(self,s):
@@ -432,7 +482,7 @@ class OracleCmd(cmd.Cmd):
         try:
             inst,tid=s.split()
         except IndexError,e:
-            P('usage: sqlid instance_no sql_id')
+            P('    usage: sqlid instance_no sql_id')
             return
         q="""select sql_text
                from gv$sqltext_with_newlines
@@ -446,27 +496,35 @@ class OracleCmd(cmd.Cmd):
     def do_help(self,s):
         """sqlminus: print some help stuff"""
 
-        import types,collections
-        funclist=[x[3:] for x,y in OracleCmd.__dict__.items()
-                  if type(y) == types.FunctionType
-                   and x.startswith('do_')]
-        mxlen=max([len(f) for f in funclist])
-        
-        helptext={}
-        categories=collections.defaultdict(list)
+        if s != '': # cmd-specific help
+            func='do_'+s
+            if OracleCmd.__dict__.has_key(func):
+                hh=OracleCmd.__dict__[func].__doc__.split(':')
+                P('    %s'%(hh[1]))
+            else:
+                P('    no help for %s'%(s))
 
-        for f in funclist:
-            hh=OracleCmd.__dict__['do_'+f].__doc__.split(':')
-            categories[hh[0]].append(f)
-            helptext[f]=hh[1].strip()
+        else:  # generic parm-less help
+            funclist=[x[3:] for x,y in OracleCmd.__dict__.items()
+                      if type(y) == types.FunctionType
+                       and x.startswith('do_')]
+            mxlen=max([len(f) for f in funclist])
+        
+            helptext={}
+            categories=collections.defaultdict(list)
+
+            for f in funclist:
+                hh=OracleCmd.__dict__['do_'+f].__doc__.split(':')
+                categories[hh[0]].append(f)
+                helptext[f]=hh[1].strip()
             
-        del(categories['INTERNAL'])
-        P(__doc__)
-        P('commands:')
-        for k in sorted(categories.keys()):
-            P('  %s'%(k))
-            for f in sorted(categories[k]):
-                P('    %*s : %s'%(mxlen,f,helptext[f]))
+            del(categories['INTERNAL'])
+            P(__doc__)
+            P('commands:')
+            for k in sorted(categories.keys()):
+                P('  %s'%(k))
+                for f in sorted(categories[k]):
+                    P('    %*s : %s'%(mxlen,f,helptext[f]))
 
     #-------------------------------------------------------------------
     def do_tables(self,s):
@@ -653,7 +711,7 @@ class OracleCmd(cmd.Cmd):
 
         s=s.strip(';')
         if len(s.split()) != 1:
-            P('usage: ddl object-name')
+            P('    usage: ddl object-name')
             return
 
         c=self.conn.cursor()
@@ -696,8 +754,13 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_EOF(self,s):
-        """INTERNAL: surely there's a better way to catch eof??"""
-        P('')
+        """INTERNAL: quit"""
+        sys.exit(0);
+
+    #-------------------------------------------------------------------
+    def do_quit(self,s):
+        """sqlminus: quit the program"""
+        # this could be 'do_quit = do_EOF' but it messes up help.
         sys.exit(0);
 
     #-------------------------------------------------------------------
@@ -710,7 +773,7 @@ class OracleCmd(cmd.Cmd):
         """devel: explain a ctx search"""
         x=shlex.split(s)
         if len(x) != 2:
-            P('usage: ctexplain index query')
+            P('    usage: ctexplain index query')
             return
         (ix,query)=x
         ix=ix.upper()
@@ -768,7 +831,7 @@ class OracleCmd(cmd.Cmd):
         s=s.strip(';')
         av=s.split()
         if len(av) != 1:
-            P('usage: jobhist jobname')
+            P('    usage: jobhist jobname')
             return
 
         self.curs.execute("""
@@ -841,12 +904,12 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_mono(self,s=None):
-        """screen: set monochrome output"""
+        """terminal: set monochrome output"""
         self.colors=['','','']
 
     #-------------------------------------------------------------------
     def do_color(self,s=None):
-        """screen: set color output"""
+        """terminal: set color output"""
         self.colors=['\033[0m','\033[36m','\033[0m']
 
 #-----------------------------------------------------------------------
@@ -895,7 +958,7 @@ def main():
     global print_is_quiet; print_is_quiet = args.quiet
 
     if len(items) < 1:
-        P('usage: sqlminus connstr')
+        P('    usage: sqlminus connstr')
         sys.exit(1)
 
     connstr=lookupAlias(items[0])
