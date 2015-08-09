@@ -82,7 +82,7 @@ def termRows():
     return termRowsCols()[0]
 
 #-------------------------------------------------------------------
-experimental_resize=False
+experimental_resize=True
 def resize_terminal(xlen,force=False):
     """EXPERIMENTAL set the terminal width"""
     if experimental_resize:
@@ -124,7 +124,7 @@ class OracleCmd(cmd.Cmd):
         self.nullstr = '-';
         self.cmds=[]
         self.cmd=''
-        self.do_mono()
+        self.do_mono('',quiet=True)
         signal.signal(signal.SIGTSTP, signal.SIG_DFL)
 
     #------------------------------------------------------------------
@@ -145,10 +145,10 @@ class OracleCmd(cmd.Cmd):
             P('resize off')
         elif s == '':
             if experimental_resize:
-                w='off'
-            else:
                 w='on'
-            P('resize is %s'%(w))
+            else:
+                w='off'
+            P('resize is currently %s'%(w))
         else:
             P('    usage: resize [on|off]')
 
@@ -159,6 +159,7 @@ class OracleCmd(cmd.Cmd):
         if s is None or s == '':
             s="80"
         resize_terminal(int(s),force=True)
+        P('    sanity hopefully restored')
 
     #-------------------------------------------------------------------
     def oraprint(self,desc,rows):
@@ -263,7 +264,7 @@ class OracleCmd(cmd.Cmd):
     #-----------------------------------------------------------------------
     def do_x(self,s):
         """INTERNAL: for internal testing"""
-        pass
+        s=s.strip(';')
         examples="""
         self.cmd='select 2+2 four from dual;'
         self.run()
@@ -451,9 +452,21 @@ class OracleCmd(cmd.Cmd):
         # this is so help will work
         self.default('delete '+s)
 
+    #-------------------------------------------------------------------
+    def do_commit(self,s):
+        """query: commit ..."""
+        self.default('commit '+s)
+
+    #-------------------------------------------------------------------
+    def do_rollback(self,s):
+        """query: rollback ..."""
+        # this is so help will work
+        self.default('rollback '+s)
+
     #-----------------------------------------------------------------------
     def do_nullstr(self,s):
         """query: set the null string"""
+        s=s.strip(';')
         if s == '':
             P('null string is "%s"'%(self.nullstr))
         else:
@@ -463,6 +476,7 @@ class OracleCmd(cmd.Cmd):
     #-----------------------------------------------------------------------
     def do_du(self,s):
         """admin: print disk usage"""
+        s=s.strip(';')
         q="""select owner,tablespace_name,sum(bytes)/(1024*1024) mbytes
                from dba_segments
                 group by owner, tablespace_name
@@ -477,30 +491,29 @@ class OracleCmd(cmd.Cmd):
     #-----------------------------------------------------------------------
     def do_sqlid(self,s):
         """devel: print text for sql id"""
-
+        s=s.strip(';')
         #TODO: fix split returns != 2 len
-        try:
-            inst,tid=s.split()
-        except IndexError,e:
+        a=s.split()
+        if len(a) != 2:
             P('    usage: sqlid instance_no sql_id')
-            return
-        q="""select sql_text
-               from gv$sqltext_with_newlines
-              where inst_id=:1 and sql_id=:2
-               order by piece"""
-        self.curs.execute(q,[inst,tid])
-        P(''.join([a[0] for a in self.curs.fetchall()]))
-        P('')
+        else:
+            inst,tid=s.split()
+            q="""select sql_text
+                   from gv$sqltext_with_newlines
+                  where inst_id=:1 and sql_id=:2
+                   order by piece"""
+            self.curs.execute(q,[inst,tid])
+            P(''.join([a[0] for a in self.curs.fetchall()]))
 
     #-------------------------------------------------------------------
     def do_help(self,s):
         """sqlminus: print some help stuff"""
-
+        s=s.strip(';')
         if s != '': # cmd-specific help
             func='do_'+s
             if OracleCmd.__dict__.has_key(func):
                 hh=OracleCmd.__dict__[func].__doc__.split(':')
-                P('    %s'%(hh[1]))
+                P('    %s'%(':'.join(hh[1:])))
             else:
                 P('    no help for %s'%(s))
 
@@ -529,6 +542,9 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_tables(self,s):
         """query: print a list of the tables"""
+        s=s.strip(';')
+        a=s.split()
+        # TODO: add wildcard parm, allow schema.
         t=self.ltabs()
         n=len(t)
         mx=0
@@ -553,6 +569,7 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_blockers(self,s):
         """admin: show any blockers (on a RAC)"""
+        s=s.strip(';')
         q="""
         SELECT /*+ ORDERED USE_NL(l,s) */
           l.inst_id,DECODE(l.request,0,'HOLD','Wait') stat,
@@ -583,6 +600,7 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_info(self,s):
         """sqlminus: print some info about the connection"""
+        s=s.strip(';')
         cv='.'.join([str(x) for x in cx_Oracle.clientversion()])
         P('client:')
         P('                 pid : %s'%(os.getpid()))
@@ -614,10 +632,15 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_desc(self,s):
-        """devel: describe an object"""
+        """devel: describe an object, e.g. desc mytable"""
+        s=s.strip(';')
         # this version depends on all_* views.  should we fall back
         # to user_* if that's not available?
         s=s.strip(';')
+        if len(s.split()) != 1:
+            P('    usage: desc object')
+            return
+
         a=s.split('.')
         if len(a) == 2:
             schname=a[0].upper()
@@ -633,7 +656,7 @@ class OracleCmd(cmd.Cmd):
              where owner=:1 and object_name=:2""",[schname,objname])
         r=c.fetchone()
         if r is None:
-            P('unknown object:'+str(s))
+            P('unknown object: '+str(s))
             return
         otype=r[0].lower()
         P(otype)
@@ -661,6 +684,7 @@ class OracleCmd(cmd.Cmd):
         # thank you stack!!
         # http://dba.stackexchange.com/questions/96858
         # Note that it requires 11.2 due to the use of listagg()
+        s=s.strip(';')
         c=self.conn.cursor()
         s=s.strip(';')
         c.execute("""
@@ -766,11 +790,13 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_ctls(self,s):
         """devel: list context indices"""
+        s=s.strip(';')
         P('    NOT IMPLEMENTED YET...')
 
     #-------------------------------------------------------------------
     def do_ctexplain(self,s):
         """devel: explain a ctx search"""
+        s=s.strip(';')
         x=shlex.split(s)
         if len(x) != 2:
             P('    usage: ctexplain index query')
@@ -810,6 +836,7 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_jobs(self,s):
         """devel: list jobs for this user"""
+        s=s.strip(';')
         self.curs.execute("""
             select job_name job,job_type type,
                 state,enabled,failure_count fails,
@@ -843,19 +870,26 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_exec(self,s):
-        """query: execute a procedure"""
-        self.cmd = 'begin %s; end;;'%(s.rstrip('; '))
-        self.run()
+        """query: execute a procedure, e.g. exec dbms_lock.sleep(3)"""
+        s=s.strip(';')
+        if len(s.split()) != 1:
+            P('    usage: exec procedure-name')
+        else:
+            # TODO: should this be curs.execute instead?
+            self.cmd = 'begin %s; end;;'%(s.rstrip('; '))
+            self.run()
 
     #-------------------------------------------------------------------
     def do_tron(self,s):
         """devel: turn on dbms_output"""
+        s=s.strip(';')
         self.curs.execute("""begin dbms_output.enable; end;""")
         P('dbms_output enabled')
 
     #-------------------------------------------------------------------
     def do_troff(self,s):
         """devel: turn off dbms_output"""
+        s=s.strip(';')
         self.curs.execute("""begin dbms_output.disable; end;""")
         P('dbms_output disabled')
 
@@ -878,7 +912,8 @@ class OracleCmd(cmd.Cmd):
         """guts for do_callX"""
         t0=time.time()
         try:
-            self.curs.execute("begin :rv := %s end;" % (s), rv=rv)
+            cmd="begin :rv := %s; end;"%(s)
+            self.curs.execute(cmd,rv=rv)
             P(rv.getvalue())
         except cx_Oracle.DatabaseError,e:
             P(str(e))
@@ -888,29 +923,53 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_calln(self,s):
-        """query: call a function returning a number"""
+        """query: call number function, e.g. calln mod(5.2)"""
+        # TODO: handle parameters?
         # TODO: get precision?
-        self._call(self.curs.var(cx_Oracle.NUMBER), s)
+        s=s.strip(';')
+        a=s.split()
+        if len(a) == 1:
+            self._call(self.curs.var(cx_Oracle.NUMBER), a[0])
+        else:
+            P('    usage: calln funcname')
 
     #-------------------------------------------------------------------
     def do_callv(self,s):
-        """query: call a function returning a varchar2"""
-        self._call(self.curs.var(cx_Oracle.STRING), s)
+        """query: call varchar2 function, e.g. callv lower('ABC')"""
+        # TODO: handle parameters?
+        s=s.strip(';')
+        a=s.split()
+        if len(a) == 1:
+            self._call(self.curs.var(cx_Oracle.STRING), a[0])
+        else:
+            P('    usage: callv funcname')
 
     #-------------------------------------------------------------------
     def do_callc(self,s):
-        """query: call a function returning a clob"""
-        self._call(self.curs.var(cx_Oracle.CLOB), s)
+        """query: call clob function, e.g. callc clobfunc"""
+        # TODO: what's a good clob function to put in docstring?
+        # TODO: add parameters?
+        s=s.strip(';')
+        a=s.split()
+        if len(a) == 1:
+            self._call(self.curs.var(cx_Oracle.CLOB), a[0])
+        else:
+            P('    usage: callc funcname')
 
     #-------------------------------------------------------------------
-    def do_mono(self,s=None):
+    def do_mono(self,s,quiet=False):
         """terminal: set monochrome output"""
+        s=s.strip(';')
         self.colors=['','','']
+        if not quiet:
+            P('    mono mode set')
 
     #-------------------------------------------------------------------
-    def do_color(self,s=None):
+    def do_color(self,s):
         """terminal: set color output"""
+        s=s.strip(';')
         self.colors=['\033[0m','\033[36m','\033[0m']
+        P('    color mode set')
 
 #-----------------------------------------------------------------------
 def lookupAlias(s):
@@ -990,7 +1049,6 @@ def main():
     if os.isatty(sys.stdin.fileno()):
         cc.connstr2=connstr2
         cc.prompt=cc.connstr2+'> '
-        cc.do_color()
     if len(items) >= 2:
         for aa in items[1:]:
             if aa.startswith('=') or aa.startswith('@'):
