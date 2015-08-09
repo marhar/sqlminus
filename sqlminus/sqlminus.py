@@ -733,6 +733,7 @@ class OracleCmd(cmd.Cmd):
     def do_ddl(self,s):
         """devel: show ddl for an object"""
 
+        # TODO: can we drop schema? eg "MH"."FOO" --> "FOO"
         s=s.strip(';')
         if len(s.split()) != 1:
             P('    usage: ddl object-name')
@@ -745,7 +746,7 @@ class OracleCmd(cmd.Cmd):
            # only initialize the transform params once
            self.ddlInit=True
            p="dbms_metadata.set_transform_param(dbms_metadata.session_transform"
-           c.execute("""
+           cmd="""
            begin
                ZZZ,'PRETTY',true);
                ZZZ,'SQLTERMINATOR',true);
@@ -753,7 +754,8 @@ class OracleCmd(cmd.Cmd):
                ZZZ,'STORAGE',false);
                ZZZ,'TABLESPACE',false);
            end;
-           """.replace("ZZZ",p))
+           """.replace("ZZZ",p)
+           c.execute(cmd)
 
         c.execute("select object_type from user_objects where object_name=:1",
             [s.upper()])
@@ -923,38 +925,32 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_calln(self,s):
-        """query: call number function, e.g. calln mod(5.2)"""
-        # TODO: handle parameters?
+        """query: call number function, e.g. calln mod(5,2)"""
         # TODO: get precision?
         s=s.strip(';')
-        a=s.split()
-        if len(a) == 1:
-            self._call(self.curs.var(cx_Oracle.NUMBER), a[0])
+        if len(s.split()) == 0:
+            P('    usage: calln func, e.g. calln mod(5,2)')
         else:
-            P('    usage: calln funcname')
+            self._call(self.curs.var(cx_Oracle.NUMBER),s)
 
     #-------------------------------------------------------------------
     def do_callv(self,s):
         """query: call varchar2 function, e.g. callv lower('ABC')"""
-        # TODO: handle parameters?
         s=s.strip(';')
-        a=s.split()
-        if len(a) == 1:
-            self._call(self.curs.var(cx_Oracle.STRING), a[0])
+        if len(s.split()) == 0:
+            P("    usage: callv funcname, e.g. callv lower('ABC')")
         else:
-            P('    usage: callv funcname')
+            self._call(self.curs.var(cx_Oracle.STRING),s)
 
     #-------------------------------------------------------------------
     def do_callc(self,s):
         """query: call clob function, e.g. callc clobfunc"""
         # TODO: what's a good clob function to put in docstring?
-        # TODO: add parameters?
         s=s.strip(';')
-        a=s.split()
-        if len(a) == 1:
-            self._call(self.curs.var(cx_Oracle.CLOB), a[0])
+        if len(s.split()) == 0:
+            P('    usage: callc funcname, e.g. callc clobfunc')
         else:
-            P('    usage: callc funcname')
+            self._call(self.curs.var(cx_Oracle.CLOB),s)
 
     #-------------------------------------------------------------------
     def do_mono(self,s,quiet=False):
