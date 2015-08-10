@@ -744,6 +744,8 @@ class OracleCmd(cmd.Cmd):
            self.ddlInit
         except AttributeError:
            # only initialize the transform params once
+           # thanks to SO for the minimally documented EMIT_SCHEMA hint.
+           # http://dba.stackexchange.com/questions/110487
            self.ddlInit=True
            p="dbms_metadata.set_transform_param(dbms_metadata.session_transform"
            cmd="""
@@ -753,6 +755,7 @@ class OracleCmd(cmd.Cmd):
                ZZZ,'SEGMENT_ATTRIBUTES',false);
                ZZZ,'STORAGE',false);
                ZZZ,'TABLESPACE',false);
+               ZZZ,'EMIT_SCHEMA',false);
            end;
            """.replace("ZZZ",p)
            c.execute(cmd)
