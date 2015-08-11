@@ -118,8 +118,8 @@ class OracleCmd(cmd.Cmd):
         else:
             self.conn = cx_Oracle.connect(connstr)
         self.conn.client_identifier='sqlminus'
-        self.conn.clientinfo='hello'
-        self.conn.module='hello2'
+        self.conn.clientinfo='sqlminus'
+        self.conn.module='sqlminus2'
         self.curs = self.conn.cursor()
         self.nullstr = '-';
         self.cmds=[]
@@ -504,6 +504,44 @@ class OracleCmd(cmd.Cmd):
                    order by piece"""
             self.curs.execute(q,[inst,tid])
             P(''.join([a[0] for a in self.curs.fetchall()]))
+
+
+    #-----------------------------------------------------------------------
+    def do_userenv(self,s):
+        """devel: print of SYS_CONTEXT('USERENV',...)"""
+        s=s.strip(';')
+        #TODO: fix split returns != 2 len
+        a=s.split()
+        # TODO: add full, verbose
+        if True:
+            T="select '%s' USERENV,sys_context('USERENV','%s') val from dual"
+            ALL=["ACTION","AUDITED_CURSORID","AUTHENTICATED_IDENTITY",
+                 "AUTHENTICATION_DATA","AUTHENTICATION_METHOD",
+                 "BG_JOB_ID","CLIENT_IDENTIFIER","CLIENT_INFO",
+                 "CURRENT_BIND","CURRENT_EDITION_ID","CURRENT_EDITION_NAME",
+                 "CURRENT_SCHEMA","CURRENT_SCHEMAID","CURRENT_SQL",
+                 "CURRENT_SQL_LENGTH","CURRENT_SQLn","CURRENT_USER",
+                 "CURRENT_USERID","DATABASE_ROLE","DB_DOMAIN",
+                 "DBLINK_INFO","DB_NAME","DB_UNIQUE_NAME",
+                 "ENTERPRISE_IDENTITY","ENTRYID","FG_JOB_ID",
+                 "GLOBAL_CONTEXT_MEMORY","GLOBAL_UID","HOST",
+                 "IDENTIFICATION_TYPE","INSTANCE","INSTANCE_NAME",
+                 "IP_ADDRESS","ISDBA","LANG","LANGUAGE","MODULE",
+                 "NETWORK_PROTOCOL","NLS_CALENDAR","NLS_CURRENCY",
+                 "NLS_DATE_FORMAT","NLS_DATE_LANGUAGE","NLS_SORT",
+                 "NLS_TERRITORY","OS_USER","POLICY_INVOKER",
+                 "PROXY_ENTERPRISE_IDENTITY","PROXY_USER","PROXY_USERID",
+                 "SERVER_HOST","SERVICE_NAME","SESSION_EDITION_ID",
+                 "SESSION_EDITION_NAME","SESSIONID","SESSION_USER",
+                 "SESSION_USERID","SID","STATEMENTID","TERMINAL"]
+
+            T="select '%s' USERENV,sys_context('USERENV','%s') val from dual"
+            q=T%(ALL[0],ALL[0])
+            for i in ALL[1:]:
+                q+='\nunion\n'
+                q+=T%(i,i)
+            self.curs.execute(q)
+            self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
     def do_help(self,s):
