@@ -1,8 +1,8 @@
 """
 sqlminus -- sqlplus minus. the features? minus the suck? you be the judge!
 
-    https://github.com/marhar/sqlminus : docs and download
-    Mark Harrison, marhar@gmail.com    : share and enjoy!
+    https://github.com/marhar/sqlminus  :  share and enjoy!
+    Mark Harrison, marhar@gmail.com     :
 """
 usage_help="""
 usage:
@@ -370,7 +370,7 @@ class OracleCmd(cmd.Cmd):
     def lcmds(self,prefix=None):
         """command names"""
         sqlcmds=['select','insert','delete','update']
-        internals=['do_EOF','do_x'] # TODO: introspect this
+        internals=['do_EOF','do_x','do_kill','do_sessions'] # TODO: introspect
         if prefix is None:
             rv=[s for s in sqlcmds]
         else:
@@ -489,6 +489,17 @@ class OracleCmd(cmd.Cmd):
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-----------------------------------------------------------------------
+    def do_kill(self,s):
+        """undoc: kill session"""
+        P('COMING')
+
+    #-----------------------------------------------------------------------
+    def do_sessions(self,s):
+        """undoc: list sessions"""
+        # sessions node=4
+        P('COMING')
+
+    #-----------------------------------------------------------------------
     def do_sqlid(self,s):
         """devel: print text for sql id"""
         s=s.strip(';')
@@ -508,40 +519,47 @@ class OracleCmd(cmd.Cmd):
 
     #-----------------------------------------------------------------------
     def do_userenv(self,s):
-        """devel: print of SYS_CONTEXT('USERENV',...)"""
+        """devel: print SYS_CONTEXT('USERENV',...)"""
         s=s.strip(';')
         #TODO: fix split returns != 2 len
         a=s.split()
-        # TODO: add full, verbose
-        if True:
-            T="select '%s' USERENV,sys_context('USERENV','%s') val from dual"
-            ALL=["ACTION","AUDITED_CURSORID","AUTHENTICATED_IDENTITY",
-                 "AUTHENTICATION_DATA","AUTHENTICATION_METHOD",
-                 "BG_JOB_ID","CLIENT_IDENTIFIER","CLIENT_INFO",
-                 "CURRENT_BIND","CURRENT_EDITION_ID","CURRENT_EDITION_NAME",
-                 "CURRENT_SCHEMA","CURRENT_SCHEMAID","CURRENT_SQL",
-                 "CURRENT_SQL_LENGTH","CURRENT_SQLn","CURRENT_USER",
-                 "CURRENT_USERID","DATABASE_ROLE","DB_DOMAIN",
-                 "DBLINK_INFO","DB_NAME","DB_UNIQUE_NAME",
-                 "ENTERPRISE_IDENTITY","ENTRYID","FG_JOB_ID",
-                 "GLOBAL_CONTEXT_MEMORY","GLOBAL_UID","HOST",
-                 "IDENTIFICATION_TYPE","INSTANCE","INSTANCE_NAME",
-                 "IP_ADDRESS","ISDBA","LANG","LANGUAGE","MODULE",
-                 "NETWORK_PROTOCOL","NLS_CALENDAR","NLS_CURRENCY",
-                 "NLS_DATE_FORMAT","NLS_DATE_LANGUAGE","NLS_SORT",
-                 "NLS_TERRITORY","OS_USER","POLICY_INVOKER",
-                 "PROXY_ENTERPRISE_IDENTITY","PROXY_USER","PROXY_USERID",
-                 "SERVER_HOST","SERVICE_NAME","SESSION_EDITION_ID",
-                 "SESSION_EDITION_NAME","SESSIONID","SESSION_USER",
-                 "SESSION_USERID","SID","STATEMENTID","TERMINAL"]
 
-            T="select '%s' USERENV,sys_context('USERENV','%s') val from dual"
-            q=T%(ALL[0],ALL[0])
-            for i in ALL[1:]:
-                q+='\nunion\n'
-                q+=T%(i,i)
-            self.curs.execute(q)
-            self.oraprint(self.curs.description,self.curs.fetchall())
+        T="select '%s' USERENV,sys_context('USERENV','%s') val from dual"
+        T2=T+' and val is not null'
+
+        if len(a) >= 1 and a[0] == 'full':
+            note=''
+            all=['ACTION','AUDITED_CURSORID','AUTHENTICATED_IDENTITY',
+            'AUTHENTICATION_DATA','AUTHENTICATION_METHOD','BG_JOB_ID',
+            'CLIENT_IDENTIFIER','CLIENT_INFO','CURRENT_BIND',
+            'CURRENT_EDITION_ID','CURRENT_EDITION_NAME','CURRENT_SCHEMA',
+            'CURRENT_SCHEMAID','CURRENT_SQL','CURRENT_SQL_LENGTH',
+            'CURRENT_SQLn','CURRENT_USER','CURRENT_USERID','DATABASE_ROLE',
+            'DB_DOMAIN','DBLINK_INFO','DB_NAME','DB_UNIQUE_NAME',
+            'ENTERPRISE_IDENTITY','ENTRYID','FG_JOB_ID',
+            'GLOBAL_CONTEXT_MEMORY','GLOBAL_UID','HOST',
+            'IDENTIFICATION_TYPE','INSTANCE','INSTANCE_NAME','IP_ADDRESS',
+            'ISDBA','LANG','LANGUAGE','MODULE','NETWORK_PROTOCOL',
+            'NLS_CALENDAR','NLS_CURRENCY','NLS_DATE_FORMAT',
+            'NLS_DATE_LANGUAGE','NLS_SORT','NLS_TERRITORY','OS_USER',
+            'POLICY_INVOKER','PROXY_ENTERPRISE_IDENTITY','PROXY_USER',
+            'PROXY_USERID','SERVER_HOST','SERVICE_NAME',
+            'SESSION_EDITION_ID','SESSION_EDITION_NAME','SESSIONID',
+            'SESSION_USER','SESSION_USERID','SID','STATEMENTID','TERMINAL']
+        else: # short
+            note='("userenv full" for full list)'
+            all=['CURRENT_SCHEMA','CURRENT_USER','DB_NAME',
+            'INSTANCE_NAME','SERVER_HOST','SERVICE_NAME','ISDBA','LANG',
+            'LANGUAGE','NLS_CURRENCY','NLS_DATE_FORMAT',
+            'NLS_DATE_LANGUAGE','NLS_SORT','NLS_TERRITORY','OS_USER','SID']
+
+        q=T%(all[0],all[0])
+        for i in all[1:]:
+            q+='\nunion\n'
+            q+=T%(i,i)
+        self.curs.execute(q)
+        self.oraprint(self.curs.description,self.curs.fetchall())
+        P(note)
 
     #-------------------------------------------------------------------
     def do_help(self,s):
@@ -1042,8 +1060,8 @@ def main():
          -- Ed Sheeran
     """
     P('--------------------------------------------------')
-    P('| Welcome to sqlminus v2.3                       |')
-    P('| docs at: https://github.com/marhar/sqlminus    |')
+    P('| Welcome to sqlminus                  build<18> |')
+    P('| docs: https://github.com/marhar/sqlminus       |')
     P('| type "help" for help                           |')
     P('--------------------------------------------------')
     parser=argparse.ArgumentParser()
