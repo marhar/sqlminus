@@ -8,8 +8,9 @@ foo:
 	@echo install, package, upload, cmp
 
 install:
-	./patch_version sqlminus.py
+	# put rm first to check for proper sudo
 	rm -f          $(TOP)/bin/sqlminus
+	./patch_version sqlminus.py
 	cp sqlminus    $(TOP)/bin/sqlminus
 	chmod 555      $(TOP)/bin/sqlminus
 	rm -f          $(TOP)/bin/sqlminus.py
