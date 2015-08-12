@@ -5,7 +5,7 @@ TOP=/usr/local/sqlminus
 # then commit, so that that revision number is tied to the source.
 
 foo:
-	@echo install, package, upload, cmp
+	@echo install, package, upload, diff
 
 install:
 	# put rm first to check for proper sudo
@@ -26,6 +26,6 @@ upload:
 	scp sqlminus mhn:public_html/sqlminus/source-packages
 	scp sqlminus.py mhn:public_html/sqlminus/source-packages
 
-cmp:
-	@-cmp sqlminus    $(TOP)/bin/sqlminus
-	@-cmp sqlminus.py $(TOP)/bin/sqlminus.py
+diff:
+	@-diff sqlminus    $(TOP)/bin/sqlminus
+	@-diff sqlminus.py $(TOP)/bin/sqlminus.py
