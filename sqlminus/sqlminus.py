@@ -899,18 +899,32 @@ class OracleCmd(cmd.Cmd):
     def do_jobs(self,s):
         """devel: list jobs for this user"""
         s=s.strip(';')
+        P('dbms_scheduler:')
         self.curs.execute("""
             select job_name job,job_type type,
                 state,enabled,failure_count fails,
                 substr(trunc(next_run_date,'MI'),1,15) as last,
                 nvl(instance_id, 0) as inst,
                 repeat_interval,
-                case when length(job_action) < 300 or job_action is null
+                case when length(job_action) < 30 or job_action is null
                     then job_action
-                    else '*** Too long to display here ***' end as text
+                    else substr(job_action,1,30)||'...' end as text
             from dba_scheduler_jobs
             where owner=sys_context('USERENV','CURRENT_SCHEMA')
             order by job_name
+        """)
+        self.oraprint(self.curs.description,self.curs.fetchall())
+        P('')
+        P('dbms_jobs:')
+        self.curs.execute("""
+            select job, schema_user schema, instance inst, broken,
+                   substr(what,1,50) dbms_job,
+                   --case when length(dbms_job) < 30 or dbms_job is null
+                   --    then dbms_job
+                   --    else substr(dbms_job,1,30)||'...' end as text,
+                   substr(interval,1,25) interval
+              from sys.dba_jobs
+          order by schema,instance
         """)
         self.oraprint(self.curs.description,self.curs.fetchall())
 
