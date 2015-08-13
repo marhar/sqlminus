@@ -1,5 +1,3 @@
-.. image:: orapig.png
-
 sqlminus -- a modern oracle command line client
 -----------------------------------------------
 
@@ -15,48 +13,55 @@ configuration:
 
     ~/.sqlminus holds connstr aliases.  format:   foo = 'foo/bar@baz'
 
-special commands:
-
-display
--------
-    color     : color display mode
-    mono      : monochrome display mode
-
-execution
----------
-    exec      : execute a procedure
-    calls     : call a function returning a varchar2
-    callc     : call a function returning a clob
-    calln     : call a function returning a number
-
-sysinfo
--------
-    blockers  : show blocking sessions (works on RAC)
-    info      : print random information about the connection
-    du        : print disk usage
-
-performance
------------
-    explain plan  : display an execution plan
-
-context full text
------------------
-    ctexplain : display a ctx execution plan
-    ctls      : display context indices
-
-development
------------
-    ddl       : show ddl for object
-    desc      : describe an object
-    fkeys     : show nested child foreign key dependencies for a table
-    tables    : list all user tables
-    sqlid     : given sqlid, print sql statement (works on RAC)
-    jobs      : list all jobs
-    tron      : turn on dbms_output
-    troff     : turn off dbms_output
-
-misc
-----
-    nullstr   : set the value displayed for the null string
-    rehash    : refresh table/column
-    help      : print this help text
+    --------------------------------------------------
+    | Welcome to sqlminus                  build<18> |
+    | docs: https://github.com/marhar/sqlminus       |
+    | type "help" for help                           |
+    --------------------------------------------------
+    connecting to marhar@orcl...
+    marhar@orcl> help
+    
+    sqlminus -- sqlplus minus. the features? minus the suck? you be the judge!
+    
+        https://github.com/marhar/sqlminus  :  share and enjoy!
+        Mark Harrison, marhar@gmail.com     :
+    
+    commands:
+      admin
+         blockers : show any blockers (on a RAC)
+               du : print disk usage
+      devel
+        ctexplain : explain a ctx search
+             ctls : list context indices
+              ddl : show ddl for an object
+             desc : describe an object, e.g. desc mytable
+            fkeys : show foreign key children of a table
+          jobhist : list history for the job
+             jobs : list jobs for this user
+            sqlid : print text for sql id
+            troff : turn off dbms_output
+             tron : turn on dbms_output
+          userenv : print SYS_CONTEXT('USERENV',...)
+      query
+            callc : call clob function, e.g. callc clobfunc
+            calln : call number function, e.g. calln mod(5,2)
+            callv : call varchar2 function, e.g. callv lower('ABC')
+           commit : commit ...
+           delete : delete ...
+             exec : execute a procedure, e.g. exec dbms_lock.sleep(3)
+           insert : insert ...
+          nullstr : set the null string
+         rollback : rollback ...
+           select : select ...
+           tables : print a list of the tables
+           update : update ...
+      sqlminus
+             help : print some help stuff
+             info : print some info about the connection
+             quit : quit the program
+      terminal
+            color : set color output
+             mono : set monochrome output
+           resize : turn resize on or off EXPERIMENTAL
+             sane : set the terminal width to a sane value EXPERIMENTAL
+    marhar@orcl> 

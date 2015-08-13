@@ -588,6 +588,7 @@ class OracleCmd(cmd.Cmd):
                 helptext[f]=hh[1].strip()
             
             del(categories['INTERNAL'])
+            del(categories['undoc'])
             P(__doc__)
             P('commands:')
             for k in sorted(categories.keys()):
