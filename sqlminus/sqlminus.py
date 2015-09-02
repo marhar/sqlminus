@@ -489,6 +489,28 @@ class OracleCmd(cmd.Cmd):
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-----------------------------------------------------------------------
+    def do_tablestats(self,s):
+        """admin: show some stats on tables"""
+        s=s.strip(';')
+        a=s.split()
+        if len(a) > 0:
+            q="""select unique table_name
+                   from user_tab_cols
+                  where upper(table_name) like upper('%s')
+                  order by table_name"""%(a[0])
+        else:
+            q="""select unique table_name
+                   from user_tab_cols
+                  order by table_name"""
+
+        c2=self.conn.cursor()
+        print '%15s %s'%('rows','table')
+        print '%15s %s'%('           ----','-----')
+        for tb, in self.curs.execute(q):
+            c2.execute("""select count(*) c, '%s' from %s"""%(tb,tb))
+            print '%15d %s'%c2.fetchone()
+
+    #-----------------------------------------------------------------------
     def do_kill(self,s):
         """undoc: kill session"""
         P('COMING')
