@@ -978,6 +978,22 @@ class OracleCmd(cmd.Cmd):
             self.run()
 
     #-------------------------------------------------------------------
+    def do_dbms_output(self,s):
+        """devel: turn dbms_output on or off"""
+        s=s.strip(';')
+        a=s.split()
+        if len(a) != 1:
+            P('    usage: dbms_output on|off')
+        if a[0] == 'on':
+            self.curs.execute("""begin dbms_output.enable; end;""")
+            P('dbms_output enabled')
+        elif a[0] == 'off':
+            self.curs.execute("""begin dbms_output.disable; end;""")
+            P('dbms_output disabled')
+        else:
+            P('    usage: dbms_output on|off')
+
+    #-------------------------------------------------------------------
     def do_tron(self,s):
         """devel: turn on dbms_output"""
         s=s.strip(';')
