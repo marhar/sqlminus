@@ -264,6 +264,7 @@ class OracleCmd(cmd.Cmd):
     #-----------------------------------------------------------------------
     def do_x(self,s):
         """INTERNAL: for internal testing"""
+        return
         s=s.strip(';')
         examples="""
         self.cmd='select 2+2 four from dual;'
@@ -612,9 +613,9 @@ class OracleCmd(cmd.Cmd):
             del(categories['INTERNAL'])
             del(categories['undoc'])
             P(__doc__)
-            P('commands:')
             for k in sorted(categories.keys()):
-                P('  %s'%(k))
+                P('')
+                P('  %s:'%(k))
                 for f in sorted(categories[k]):
                     P('    %*s : %s'%(mxlen,f,helptext[f]))
 
@@ -994,20 +995,6 @@ class OracleCmd(cmd.Cmd):
             P('    usage: dbms_output on|off')
 
     #-------------------------------------------------------------------
-    def do_tron(self,s):
-        """devel: turn on dbms_output"""
-        s=s.strip(';')
-        self.curs.execute("""begin dbms_output.enable; end;""")
-        P('dbms_output enabled')
-
-    #-------------------------------------------------------------------
-    def do_troff(self,s):
-        """devel: turn off dbms_output"""
-        s=s.strip(';')
-        self.curs.execute("""begin dbms_output.disable; end;""")
-        P('dbms_output disabled')
-
-    #-------------------------------------------------------------------
     def _dump_dbms_output(self):
         curs=self.conn.cursor()
         line=curs.var(cx_Oracle.STRING)
@@ -1079,6 +1066,49 @@ class OracleCmd(cmd.Cmd):
         self.colors=['\033[0m','\033[36m','\033[0m']
         P('    color mode set')
 
+    #-------------------------------------------------------------------
+    def do_p(self,s):
+        """sqlminus: print current command buffer"""
+        print '<<<%s>>>'%(self.cmd)
+
+    #-------------------------------------------------------------------
+    def do_v(self,s):
+        """sqlminus: (experimental) load current command buffer into editor"""
+
+        edfile='/tmp/sqlminus-edit.%d'%(os.getpid())
+        fd=open(edfile,'w')
+        fd.write(self.cmd)
+        fd.close()
+
+        # mac for now... -tnW = textedit, new session, wait
+        editor=os.environ.get('EDITOR','open -tnW')
+
+        # vi + /tmp/foo
+        # emacs /tmp/foo --eval "(goto-char (point-max))"
+        # emacs +9999 /tmp/foo
+        # vi +9999 /tmp/foo
+        if editor in ['vi','vim','emacs']:
+            editor += ' +9999'
+
+        cmdline='%s %s'%(editor,edfile)
+        print cmdline
+        os.system(cmdline)
+        print 'done'
+
+        fd=open(edfile,'r')
+        self.cmd=fd.read()
+        fd.close()
+        os.unlink(edfile)
+        self.cmd=self.cmd.strip()
+        self.do_p(s)
+        if self.cmd.endswith(';'):
+            self.run()
+
+    #-------------------------------------------------------------------
+    def do_setup(self,s):
+        """undoc: examine current configuration and setup"""
+        P('coming...')
+
 #-----------------------------------------------------------------------
 def lookupAlias(s):
     """resolve an alias"""
@@ -1113,7 +1143,7 @@ def main():
          -- Ed Sheeran
     """
     P('--------------------------------------------------')
-    P('| Welcome to sqlminus                  build<18> |')
+    P('| Welcome to sqlminus                  build<19> |')
     P('| docs: https://github.com/marhar/sqlminus       |')
     P('| type "help" for help                           |')
     P('--------------------------------------------------')
