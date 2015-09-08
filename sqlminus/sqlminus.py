@@ -124,6 +124,7 @@ class OracleCmd(cmd.Cmd):
         self.nullstr = '-';
         self.cmds=[]
         self.cmd=''
+        self.echoFlag=False
         self.do_mono('',quiet=True)
         signal.signal(signal.SIGTSTP, signal.SIG_DFL)
 
@@ -204,6 +205,8 @@ class OracleCmd(cmd.Cmd):
     def run(self):
         """execute a command and display results"""
         try:
+            if self.echoFlag:
+                P(self.cmd)
             self.cmd=re.sub('; *$','',self.cmd)
             cmdw=self.cmd.split()
             t0=time.time()
@@ -1105,6 +1108,30 @@ class OracleCmd(cmd.Cmd):
             self.run()
 
     #-------------------------------------------------------------------
+    def do_prompt(self,s):
+        """sqlminus: set the prompt string"""
+        self.prompt=s+'> '
+
+    #-------------------------------------------------------------------
+    def do_echo(self,s):
+        """sqlminus: echo SQL before executing, on or off"""
+        if s == 'on':
+            self.echoFlag=True
+        else:
+            self.echoFlag=False
+        P('echo SQL: %s'%(self.echoFlag))
+
+    #-------------------------------------------------------------------
+    def do_loopit(self,s):
+        """experimental: loop a command"""
+
+        P('experimental...')
+        while True:
+            self.cmd = s;
+            self.run()
+            time.sleep(60)
+
+    #-------------------------------------------------------------------
     def do_setup(self,s):
         """undoc: examine current configuration and setup"""
         P('coming...')
@@ -1186,7 +1213,14 @@ def main():
 
     if os.isatty(sys.stdin.fileno()):
         cc.connstr2=connstr2
-        cc.prompt=cc.connstr2+'> '
+
+        # if there's a paren in the connect string, truncate to name@
+        atpos=cc.connstr2.find('@')
+        papos=cc.connstr2.find('(')
+        if papos > -1 and atpos > -1:
+            cc.do_prompt(items[0][:atpos+1])
+        else:
+            cc.do_prompt(cc.connstr2)
     if len(items) >= 2:
         for aa in items[1:]:
             if aa.startswith('=') or aa.startswith('@'):
