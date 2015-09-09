@@ -31,7 +31,7 @@ upload1:
 
 upload2:
 	rm -f /tmp/$(TARBALL2)
-	tar czf /tmp/$(TARBALL2) $(TOP)/bin/sqlminus.py
+	tar czf /tmp/$(TARBALL2) $(TOP)
 	scp /tmp/$(TARBALL2) mhn:public_html/sqlminus
 
 upload: upload1 upload2
