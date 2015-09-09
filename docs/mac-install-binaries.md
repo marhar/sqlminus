@@ -1,32 +1,43 @@
-Binary installation of cx_Oracle and sqlminus on MacOS
-======================================================
+Mac Binaries for sqlminus
+=========================
 
-I've put together an experimental binary installation for
-cx_Oracle and sqlminus.  No guarantees, but "it works for me".
+I've put together an experimental binary installation for sqlminus.
 
-download the tar file
----------------------
+download
+--------
 
-The lastest tarball is here:
+- small version
 
-   http://markharrison.net/sqlminus
+  If you have previously downloaded sqlminus before, you just need
+  this tiny file.
 
-cd to the root directory
-------------------------
+  http://markharrison.net/sqlminus/sqlminus.current-macos-small.tgz
+
+- big version
+
+  If you haven't downloaded sqlminus before, you need this version
+  which included the necessary Oracle runtimes.
+
+   http://markharrison.net/sqlminus/sqlminus.current-macos-full.tgz
+
+
+install
+-------
+
+Depending on which tarball you downloaded, do one of these:
 
     cd /
+    sudo tar xzf ~/Downloads/sqlminus.current-macos-small.tgz
 
-untar the file
---------------
-
-    sudo tar xzf ~/Downloads/sqlminus.current-macos.tgz
+    cd /
+    sudo tar xzf ~/Downloads/sqlminus.current-macos-full.tgz
 
 test
 ----
 
     $ /usr/local/sqlminus/bin/sqlminus scott/tiger@orcl
     --------------------------------------------------
-    | Welcome to sqlminus v2.1                       |
+    | Welcome to sqlminus                            |
     | docs at: https://github.com/marhar/sqlminus    |
     | type "help" for help                           |
     --------------------------------------------------
