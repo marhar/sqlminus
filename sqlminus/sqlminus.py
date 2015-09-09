@@ -1170,7 +1170,7 @@ def main():
          -- Ed Sheeran
     """
     P('--------------------------------------------------')
-    P('| Welcome to sqlminus                  build<19> |')
+    P('| Welcome to sqlminus                  build<20> |')
     P('| docs: https://github.com/marhar/sqlminus       |')
     P('| type "help" for help                           |')
     P('--------------------------------------------------')
