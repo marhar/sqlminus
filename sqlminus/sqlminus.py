@@ -982,6 +982,32 @@ class OracleCmd(cmd.Cmd):
             self.run()
 
     #-------------------------------------------------------------------
+    def do_grants(self,s):
+        """query: show grant for OBJ, USER OBJ, or USER.OBJ"""
+        s=s.strip(';')
+        a=s.split()
+
+        q="""select *
+               from dba_tab_privs
+              where owner=:1 and table_name=:2"""
+
+        if len(a) != 1:
+            P('    usage: grants [USER.]OBJ')
+        else:
+            parts=a[0].split('.')
+            if len(parts) == 1:
+                # fill in the current schema
+                self.curs.execute("""
+                     select sys_context('USERENV','CURRENT_SCHEMA') 
+                       from dual""")
+                schema,=self.curs.fetchone()
+                oo=[schema.upper(),parts[0].upper()]
+            else:
+                oo=(parts[0].upper(),parts[1].upper())
+            self.curs.execute(q,oo)
+            self.oraprint(self.curs.description,self.curs.fetchall())
+
+    #-------------------------------------------------------------------
     def do_dbms_output(self,s):
         """devel: turn dbms_output on or off"""
         s=s.strip(';')
