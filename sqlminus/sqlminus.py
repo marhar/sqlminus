@@ -923,8 +923,21 @@ class OracleCmd(cmd.Cmd):
 
     #-------------------------------------------------------------------
     def do_jobs(self,s):
-        """devel: list jobs for this user"""
+        """devel: list dbms_jobs and dbms_scheduler jobs"""
         s=s.strip(';')
+        P('dbms_jobs:')
+        self.curs.execute("""
+            select job, schema_user schema, instance inst, broken,
+                   substr(what,1,50) dbms_job,
+                   --case when length(dbms_job) < 30 or dbms_job is null
+                   --    then dbms_job
+                   --    else substr(dbms_job,1,30)||'...' end as text,
+                   substr(interval,1,25) interval
+              from sys.dba_jobs
+          order by schema,instance
+        """)
+        self.oraprint(self.curs.description,self.curs.fetchall())
+        P('')
         P('dbms_scheduler:')
         self.curs.execute("""
             select job_name job,job_type type,
@@ -938,19 +951,6 @@ class OracleCmd(cmd.Cmd):
             from dba_scheduler_jobs
             where owner=sys_context('USERENV','CURRENT_SCHEMA')
             order by job_name
-        """)
-        self.oraprint(self.curs.description,self.curs.fetchall())
-        P('')
-        P('dbms_jobs:')
-        self.curs.execute("""
-            select job, schema_user schema, instance inst, broken,
-                   substr(what,1,50) dbms_job,
-                   --case when length(dbms_job) < 30 or dbms_job is null
-                   --    then dbms_job
-                   --    else substr(dbms_job,1,30)||'...' end as text,
-                   substr(interval,1,25) interval
-              from sys.dba_jobs
-          order by schema,instance
         """)
         self.oraprint(self.curs.description,self.curs.fetchall())
 
