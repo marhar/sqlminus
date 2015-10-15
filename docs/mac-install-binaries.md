@@ -6,20 +6,24 @@ I've put together an experimental binary installation for sqlminus.
 download
 --------
 
+The files mentioned below are here.  Look here and grab the latest versions of
+the files mentioned on this page.
+
+    https://github.com/marhar/sqlminus/tree/master/dist
+
 - small version
 
   If you have previously downloaded sqlminus before, you just need
   this tiny file.
 
-  http://markharrison.net/sqlminus/sqlminus.current-macos-small.tgz
+    https://github.com/marhar/sqlminus/blob/master/dist/sqlminus-build20-small.tgz
 
 - big version
 
   If you haven't downloaded sqlminus before, you need this version
   which included the necessary Oracle runtimes.
 
-   http://markharrison.net/sqlminus/sqlminus.current-macos-full.tgz
-
+    https://github.com/marhar/sqlminus/blob/master/dist/sqlminus-build20-macos.tgz
 
 install
 -------
@@ -27,10 +31,10 @@ install
 Depending on which tarball you downloaded, do one of these:
 
     cd /
-    sudo tar xzf ~/Downloads/sqlminus.current-macos-small.tgz
+    sudo tar xzf ~/Downloads/sqlminus.build20-small.tgz
 
     cd /
-    sudo tar xzf ~/Downloads/sqlminus.current-macos-full.tgz
+    sudo tar xzf ~/Downloads/sqlminus-build20-macos.tgz
 
 test
 ----
