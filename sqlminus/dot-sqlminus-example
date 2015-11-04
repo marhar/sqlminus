@@ -1,0 +1,3 @@
+# should be named $HOME/.sqlminus
+# alias = 'sql connect string"
+scott = 'scott/tiger@orcl'
