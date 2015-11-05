@@ -867,13 +867,14 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_EOF(self,s):
         """INTERNAL: quit"""
+        P('')
         sys.exit(0);
 
     #-------------------------------------------------------------------
     def do_quit(self,s):
         """sqlminus: quit the program"""
         # this could be 'do_quit = do_EOF' but it messes up help.
-        sys.exit(0);
+        self.do_EOF('')
 
     #-------------------------------------------------------------------
     def do_ctls(self,s):
@@ -1243,10 +1244,16 @@ def main():
         # if there's a paren in the connect string, truncate to name@
         atpos=cc.connstr2.find('@')
         papos=cc.connstr2.find('(')
+        pdpos=cc.connstr2.find('.')
         if papos > -1 and atpos > -1:
             cc.do_prompt(items[0][:atpos+1])
         else:
-            cc.do_prompt(cc.connstr2)
+            # experimental: make shorter name for prompt
+            # hack: works for lcdev
+            if len(cc.connstr2) > 12 and pdpos > 0:
+                cc.do_prompt(cc.connstr2[:pdpos])
+            else:
+                cc.do_prompt(cc.connstr2)
     if len(items) >= 2:
         for aa in items[1:]:
             if aa.startswith('=') or aa.startswith('@'):
