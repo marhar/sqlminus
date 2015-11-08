@@ -23,7 +23,7 @@ features:
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
-import traceback,getpass,shlex,subprocess,types,cx_Oracle
+import traceback,getpass,shlex,subprocess,types,threading,cx_Oracle
 
 #-----------------------------------------------------------------------
 def P(s):
@@ -92,6 +92,13 @@ def resize_font(sz):
     fd=os.popen('osascript','w')
     fd.write(weird_applescript%(sz))
 
+def keepalive(conn):
+    """keep the connection alive by periodically querying"""
+    curs=conn.cursor()
+    while True:
+        curs.execute('select sysdate from dual')
+        time.sleep(300)
+
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def __init__(self,connstr,sysdba):
@@ -103,12 +110,18 @@ class OracleCmd(cmd.Cmd):
             readline.set_completer_delims(' ') # space is the only delimiter now
 
         if sysdba is True:
-            self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA)
+            self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA,
+                                          threaded=True)
             P('----------------------------------------------------------')
             P('| DUMBASS ALERT: logged in as sysdba, dont be a DUMBASS! |')
             P('----------------------------------------------------------')
         else:
-            self.conn = cx_Oracle.connect(connstr)
+            self.conn = cx_Oracle.connect(connstr,threaded=True)
+
+        k=threading.Thread(name='keepalive',target=keepalive,args=[self.conn])
+        k.setDaemon(True)
+        k.start()
+
         self.conn.client_identifier='sqlminus'
         self.conn.clientinfo='sqlminus'
         self.conn.module='sqlminus2'
