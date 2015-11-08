@@ -53,19 +53,6 @@ def D(s):
     D0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
-print_is_quiet = False
-def V0(s):
-    """verbose print and flush, no newline. --quiet to supress"""
-    if print_is_quiet is False:
-        sys.stdout.write(str(s))
-        sys.stdout.flush()
-
-#-----------------------------------------------------------------------
-def V(s):
-    """verbose print and flush, with newline. --quiet to supress"""
-    V0(str(s)+'\n')
-
-#-----------------------------------------------------------------------
 def termRowsCols():
     """how many rows, cols on our screen?"""
     rows,cols=os.popen('stty size', 'r').read().split()
@@ -1196,17 +1183,18 @@ def main():
        just be nice to everyone and always smile.
          -- Ed Sheeran
     """
-    P('--------------------------------------------------')
-    P('| Welcome to sqlminus                  build<20> |')
-    P('| docs: https://github.com/marhar/sqlminus       |')
-    P('| type "help" for help                           |')
-    P('--------------------------------------------------')
     parser=argparse.ArgumentParser()
     #parser.add_argument('-f',"--file",help="input sql file")
     parser.add_argument('--sysdba',action='store_true',help="login as sysdba")
     parser.add_argument('--quiet','-q',action='store_true',help="quiet output")
     args,items=parser.parse_known_args()
-    global print_is_quiet; print_is_quiet = args.quiet
+
+    if args.quiet is False:
+        P('--------------------------------------------------')
+        P('| Welcome to sqlminus                  build<20> |')
+        P('| docs: https://github.com/marhar/sqlminus       |')
+        P('| type "help" for help                           |')
+        P('--------------------------------------------------')
 
     if len(items) < 1:
         P('    usage: sqlminus connstr')
@@ -1221,7 +1209,8 @@ def main():
     # we get an ORA-1017 or ORA-1262 (both of which could indicate
     # a bad password we'll prompt for the password and try again.
 
-    P('connecting to %s...'%(connstr2))
+    if args.quiet is False:
+        P('connecting to %s...'%(connstr2))
     try:
         cc=OracleCmd(connstr,args.sysdba)
     except cx_Oracle.DatabaseError,e:
