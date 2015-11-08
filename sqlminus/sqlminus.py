@@ -610,6 +610,11 @@ class OracleCmd(cmd.Cmd):
                     P('    %*s : %s'%(mxlen,f,helptext[f]))
 
     #-------------------------------------------------------------------
+    def do_print(self,s):
+        """sqlminus: echo the given line"""
+        P(s)
+
+    #-------------------------------------------------------------------
     def do_tables(self,s):
         """query: print a list of the tables"""
         s=s.strip(';')
@@ -1117,7 +1122,7 @@ class OracleCmd(cmd.Cmd):
         fd.close()
         os.unlink(edfile)
         self.cmd=self.cmd.strip()
-        self.do_p(s)
+        self.p(s)
         if self.cmd.endswith(';'):
             self.run()
 
