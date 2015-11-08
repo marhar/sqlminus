@@ -97,6 +97,11 @@ class OracleCmd(cmd.Cmd):
     def __init__(self,connstr,sysdba):
         """OracleCmd init"""
         cmd.Cmd.__init__(self)
+        # gnu/libedit readline weirdness on macos. see
+        # https://docs.python.org/2/library/readline.html
+        if readline.__doc__.rfind('libedit') == -1:
+            readline.set_completer_delims(' ') # space is the only delimiter now
+
         if sysdba is True:
             self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA)
             P('----------------------------------------------------------')
