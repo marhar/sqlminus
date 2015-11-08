@@ -593,6 +593,11 @@ class OracleCmd(cmd.Cmd):
         P(note)
 
     #-------------------------------------------------------------------
+    def do_shell(self,s):
+        """sqlminus: run a shell command"""
+        os.system(s)
+
+    #-------------------------------------------------------------------
     def do_help(self,s):
         """sqlminus: print some help stuff"""
         s=s.strip(';')
