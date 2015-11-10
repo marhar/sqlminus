@@ -1227,7 +1227,7 @@ def main():
 
     if args.quiet is False:
         P('--------------------------------------------------')
-        P('| Welcome to sqlminus                  build<20> |')
+        P('| Welcome to sqlminus                  build<21> |')
         P('| docs: https://github.com/marhar/sqlminus       |')
         P('| type "help" for help                           |')
         P('--------------------------------------------------')
