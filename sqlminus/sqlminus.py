@@ -696,6 +696,14 @@ class OracleCmd(cmd.Cmd):
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
+    def do_bug(self,s):
+        """sqlminus: open an issue report"""
+        #TODO: figure out for non-mac
+        P('taking you to issue page:')
+        P('https://github.com/marhar/sqlminus/issues/new')
+        os.system('open https://github.com/marhar/sqlminus/issues/new')
+
+    #-------------------------------------------------------------------
     def do_info(self,s):
         """sqlminus: print some info about the connection"""
         s=s.strip(';')
