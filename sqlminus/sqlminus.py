@@ -96,8 +96,13 @@ def keepalive(conn):
     """keep the connection alive by periodically querying"""
     curs=conn.cursor()
     while True:
-        curs.execute('select sysdate from dual')
-        time.sleep(300)
+        try:
+            curs.execute('select sysdate from dual')
+            time.sleep(300)
+        except Exception(e):
+            print 'KEEPALIVE:'
+            print time.ctime()
+            print e
 
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
@@ -1227,7 +1232,7 @@ def main():
 
     if args.quiet is False:
         P('--------------------------------------------------')
-        P('| Welcome to sqlminus                  build<21> |')
+        P('| Welcome to sqlminus                  build<22> |')
         P('| docs: https://github.com/marhar/sqlminus       |')
         P('| type "help" for help                           |')
         P('--------------------------------------------------')
