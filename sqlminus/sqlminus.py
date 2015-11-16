@@ -199,6 +199,7 @@ class OracleCmd(cmd.Cmd):
 
         # header
         line=fmt0%tuple([i[0].lower() for i in desc])
+        line=line.rstrip()
         resize_terminal(len(line))
         P(line)
         P(re.sub('[^ ]','-',line))
@@ -208,6 +209,7 @@ class OracleCmd(cmd.Cmd):
         for r in rows:
             r2=[self.nullstr if i is None else i for i in r]
             line=fmt1%tuple(r2)
+            line=line.rstrip()
             P('%s%s'%(self.colors[x],line))
         P(self.colors[2])
 
