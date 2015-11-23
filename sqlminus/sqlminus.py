@@ -26,15 +26,24 @@ import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
 import traceback,getpass,shlex,subprocess,types,threading,cx_Oracle
 
 #-----------------------------------------------------------------------
+def setPout(newfd):
+    """set P output fd"""
+    global pfoutput
+    saved=pfoutput
+    pfoutput=newfd
+    return saved
+
+#-----------------------------------------------------------------------
 def P(s):
     """print and flush, with newline"""
     P0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
+pfoutput=sys.stdout   #TODO: encapsulate later
 def P0(s):
     """print and flush, no newline"""
-    sys.stdout.write(str(s))
-    sys.stdout.flush()
+    pfoutput.write(str(s))
+    pfoutput.flush()
 
 #-----------------------------------------------------------------------
 dbgfd=None
@@ -99,7 +108,7 @@ def keepalive(conn):
         try:
             curs.execute('select sysdate from dual')
             time.sleep(300)
-        except Exception(e):
+        except Exception,e:
             print 'KEEPALIVE:'
             print time.ctime()
             print e
@@ -125,7 +134,7 @@ class OracleCmd(cmd.Cmd):
 
         k=threading.Thread(name='keepalive',target=keepalive,args=[self.conn])
         k.setDaemon(True)
-        k.start()
+        #k.start()   ### dont start, it gets stuck in loop when disconnects
 
         self.conn.client_identifier='sqlminus'
         self.conn.clientinfo='sqlminus'
@@ -173,10 +182,13 @@ class OracleCmd(cmd.Cmd):
         P('    sanity hopefully restored')
 
     #-------------------------------------------------------------------
-    def oraprint(self,desc,rows):
+    def oraprint(self,desc,rows,outfd=None):
         """nicely print a query result set"""
         # get the max width and type of each column,
         # use that to build fmt strings to print the header and rows
+
+        if outfd is not None:
+            savedfd= setPout(outfd)
 
         maxlen=[len(i[0]) for i in desc]
         types=[i[1] for i in desc]
@@ -212,15 +224,34 @@ class OracleCmd(cmd.Cmd):
             line=line.rstrip()
             P('%s%s'%(self.colors[x],line))
         P(self.colors[2])
+        if outfd is not None:
+            setPout(savedfd)
 
     #-------------------------------------------------------------------
     def run(self):
         """execute a command and display results"""
+
         try:
             if self.echoFlag:
                 P(self.cmd)
             self.cmd=re.sub('; *$','',self.cmd)
             cmdw=self.cmd.split()
+
+            ### LEFT OFF HERE: add fdoutput for PASTEBOARD
+
+            # experimental: is this the right place to handle?
+            # are we writing to the pasteboard?
+            # if so, patch the command to run normally and intercept
+            # the output
+            if cmdw[0] == 'pb':
+                pasteboard = True
+                print 'PASTEBOARD'
+                s2=self.cmd[2:].strip()
+                print 's2=:%s:'%s2
+                self.cmd=s2
+            else:
+                pasteboard = False
+
             t0=time.time()
             rc=self.curs.execute(self.cmd)
 
@@ -445,10 +476,22 @@ class OracleCmd(cmd.Cmd):
             self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
+    def do_pb(self,s):
+        """experimental: execute a command and put results on clipboard"""
+        print 's=:%s:'%s
+        self.default('pb '+s)
+
+    #-------------------------------------------------------------------
     def do_select(self,s):
         """query: select ..."""
         # this is so help will work
         self.default('select '+s)
+
+    #-------------------------------------------------------------------
+    def do_with(self,s):
+        """query: with ..."""
+        # this is so help will work
+        self.default('with '+s)
 
     #-------------------------------------------------------------------
     def do_insert(self,s):
@@ -626,6 +669,7 @@ class OracleCmd(cmd.Cmd):
             categories=collections.defaultdict(list)
 
             for f in funclist:
+                print 'f=',f
                 hh=OracleCmd.__dict__['do_'+f].__doc__.split(':')
                 categories[hh[0]].append(f)
                 helptext[f]=hh[1].strip()
