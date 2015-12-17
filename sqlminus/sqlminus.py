@@ -132,8 +132,8 @@ class OracleCmd(cmd.Cmd):
         else:
             self.conn = cx_Oracle.connect(connstr,threaded=True)
 
-        k=threading.Thread(name='keepalive',target=keepalive,args=[self.conn])
-        k.setDaemon(True)
+        #k=threading.Thread(name='keepalive',target=keepalive,args=[self.conn])
+        #k.setDaemon(True)
         #k.start()   ### dont start, it gets stuck in loop when disconnects
 
         self.conn.client_identifier='sqlminus'
