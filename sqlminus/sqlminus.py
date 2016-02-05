@@ -695,6 +695,10 @@ class OracleCmd(cmd.Cmd):
         a=s.split()
         # TODO: add wildcard parm, allow schema.
         t=self.ltabs()
+        ## BUG: if n < number of columns, code will break.
+        ## this line is a quick workaround
+        if len(t) < 10:
+            for zz in range(10): t.append('')
         n=len(t)
         mx=0
         for i in t:
