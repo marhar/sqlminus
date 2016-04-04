@@ -303,8 +303,10 @@ class OracleCmd(cmd.Cmd):
                 P('%s: %s'%(fn, str(e)))
                 ll=['']
         else:
-            ll=[s]
+            ll=s.strip().split('\n')
         for line in ll:
+            line=line.strip()
+            print '--->',line
             self.default0(line)
 
     #-----------------------------------------------------------------------
