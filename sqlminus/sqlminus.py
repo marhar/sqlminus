@@ -306,7 +306,8 @@ class OracleCmd(cmd.Cmd):
             ll=s.strip().split('\n')
         for line in ll:
             line=line.strip()
-            print '--->',line
+            # TODO: print the line if in non-interactive mode?
+            ####print '--->',line
             self.default0(line)
 
     #-----------------------------------------------------------------------
@@ -1284,7 +1285,7 @@ def main():
 
     if args.quiet is False:
         P('--------------------------------------------------')
-        P('| Welcome to sqlminus                  build<24> |')
+        P('| Welcome to sqlminus                  build<26> |')
         P('| docs: https://github.com/marhar/sqlminus       |')
         P('| type "help" for help                           |')
         P('--------------------------------------------------')
