@@ -1004,28 +1004,46 @@ class OracleCmd(cmd.Cmd):
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
+    def do_job(self,s):
+        """devel: describe a dbms_job or dbms_scheduler job"""
+        a=s.strip(';').split()
+        if len(a) != 1:
+            P('    usage: job jobname')
+            return
+        jobid = a[0]
+        # TODO: add dba_jobs
+        # TODO: add more detail
+        # TODO: format by line
+        P('job: %s'%(jobid))
+        self.curs.execute("""
+          select owner, job_name job, job_class class, enabled
+            from dba_scheduler_jobs
+           where job_name = :1
+        """, [jobid])
+        self.oraprint(self.curs.description,self.curs.fetchall())
+
+    #-------------------------------------------------------------------
     def do_jobs(self,s):
         """devel: list dbms_jobs and dbms_scheduler jobs"""
         s=s.strip(';')
         P('dbms_jobs:')
         self.curs.execute("""
-            select job, schema_user schema, instance inst, broken,
+            select job, broken,
                    substr(what,1,50) dbms_job,
                    --case when length(dbms_job) < 30 or dbms_job is null
                    --    then dbms_job
                    --    else substr(dbms_job,1,30)||'...' end as text,
                    substr(interval,1,25) interval
               from sys.dba_jobs
-          order by schema,instance
+              where schema_user = sys_context('USERENV','CURRENT_SCHEMA')
+          order by job
         """)
         self.oraprint(self.curs.description,self.curs.fetchall())
         P('')
         P('dbms_scheduler:')
         self.curs.execute("""
-            select job_name job,job_type type,
+            select job_name job,
                 state,enabled,failure_count fails,
-                substr(trunc(next_run_date,'MI'),1,15) as last,
-                nvl(instance_id, 0) as inst,
                 repeat_interval,
                 case when length(job_action) < 30 or job_action is null
                     then job_action
