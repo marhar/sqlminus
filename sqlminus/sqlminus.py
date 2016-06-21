@@ -1073,9 +1073,9 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_exec(self,s):
         """query: execute a procedure, e.g. exec dbms_lock.sleep(3)"""
-        s=s.strip(';')
-        if len(s.split()) != 1:
-            P('    usage: exec procedure-name')
+        a = s.split(' ')
+        if len(a) < 1 or a[0] == '':
+            P('    usage: exec procedure...')
         else:
             # TODO: should this be curs.execute instead?
             self.cmd = 'begin %s; end;;'%(s.rstrip('; '))
