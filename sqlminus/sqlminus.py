@@ -204,10 +204,12 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def run(self):
         """execute a command and display results"""
+
         try:
             if self.echoFlag:
                 P(self.cmd)
-            self.cmd=re.sub('; *$','',self.cmd)
+            self.cmd=re.sub(' *$','',self.cmd)
+            self.cmd=re.sub(';$','',self.cmd)
             cmdw=self.cmd.split()
             t0=time.time()
             rc=self.curs.execute(self.cmd)
