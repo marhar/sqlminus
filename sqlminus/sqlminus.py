@@ -23,7 +23,15 @@ features:
 """
 
 import sys,os,re,time,cmd,collections,readline,signal,argparse,socket
-import traceback,getpass,shlex,subprocess,types,cx_Oracle
+import traceback,getpass,shlex,subprocess,types,threading,cx_Oracle
+
+#-----------------------------------------------------------------------
+def setPout(newfd):
+    """set P output fd"""
+    global pfoutput
+    saved=pfoutput
+    pfoutput=newfd
+    return saved
 
 #-----------------------------------------------------------------------
 def P(s):
@@ -31,10 +39,11 @@ def P(s):
     P0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
+pfoutput=sys.stdout   #TODO: encapsulate later
 def P0(s):
     """print and flush, no newline"""
-    sys.stdout.write(str(s))
-    sys.stdout.flush()
+    pfoutput.write(str(s))
+    pfoutput.flush()
 
 #-----------------------------------------------------------------------
 dbgfd=None
@@ -51,19 +60,6 @@ def D0(s):
 def D(s):
     """debug output with newline."""
     D0(str(s)+'\n')
-
-#-----------------------------------------------------------------------
-print_is_quiet = False
-def V0(s):
-    """verbose print and flush, no newline. --quiet to supress"""
-    if print_is_quiet is False:
-        sys.stdout.write(str(s))
-        sys.stdout.flush()
-
-#-----------------------------------------------------------------------
-def V(s):
-    """verbose print and flush, with newline. --quiet to supress"""
-    V0(str(s)+'\n')
 
 #-----------------------------------------------------------------------
 def termRowsCols():
@@ -105,18 +101,41 @@ def resize_font(sz):
     fd=os.popen('osascript','w')
     fd.write(weird_applescript%(sz))
 
+def keepalive(conn):
+    """keep the connection alive by periodically querying"""
+    curs=conn.cursor()
+    while True:
+        try:
+            curs.execute('select sysdate from dual')
+            time.sleep(300)
+        except Exception,e:
+            print 'KEEPALIVE:'
+            print time.ctime()
+            print e
+
 class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def __init__(self,connstr,sysdba):
         """OracleCmd init"""
         cmd.Cmd.__init__(self)
+        # gnu/libedit readline weirdness on macos. see
+        # https://docs.python.org/2/library/readline.html
+        if readline.__doc__.rfind('libedit') == -1:
+            readline.set_completer_delims(' ') # space is the only delimiter now
+
         if sysdba is True:
-            self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA)
+            self.conn = cx_Oracle.connect(connstr,mode=cx_Oracle.SYSDBA,
+                                          threaded=True)
             P('----------------------------------------------------------')
             P('| DUMBASS ALERT: logged in as sysdba, dont be a DUMBASS! |')
             P('----------------------------------------------------------')
         else:
-            self.conn = cx_Oracle.connect(connstr)
+            self.conn = cx_Oracle.connect(connstr,threaded=True)
+
+        #k=threading.Thread(name='keepalive',target=keepalive,args=[self.conn])
+        #k.setDaemon(True)
+        #k.start()   ### dont start, it gets stuck in loop when disconnects
+
         self.conn.client_identifier='sqlminus'
         self.conn.clientinfo='sqlminus'
         self.conn.module='sqlminus2'
@@ -163,10 +182,13 @@ class OracleCmd(cmd.Cmd):
         P('    sanity hopefully restored')
 
     #-------------------------------------------------------------------
-    def oraprint(self,desc,rows):
+    def oraprint(self,desc,rows,outfd=None):
         """nicely print a query result set"""
         # get the max width and type of each column,
         # use that to build fmt strings to print the header and rows
+
+        if outfd is not None:
+            savedfd= setPout(outfd)
 
         maxlen=[len(i[0]) for i in desc]
         types=[i[1] for i in desc]
@@ -189,6 +211,7 @@ class OracleCmd(cmd.Cmd):
 
         # header
         line=fmt0%tuple([i[0].lower() for i in desc])
+        line=line.rstrip()
         resize_terminal(len(line))
         P(line)
         P(re.sub('[^ ]','-',line))
@@ -198,8 +221,11 @@ class OracleCmd(cmd.Cmd):
         for r in rows:
             r2=[self.nullstr if i is None else i for i in r]
             line=fmt1%tuple(r2)
+            line=line.rstrip()
             P('%s%s'%(self.colors[x],line))
         P(self.colors[2])
+        if outfd is not None:
+            setPout(savedfd)
 
     #-------------------------------------------------------------------
     def run(self):
@@ -211,6 +237,22 @@ class OracleCmd(cmd.Cmd):
             self.cmd=re.sub(' *$','',self.cmd)
             self.cmd=re.sub(';$','',self.cmd)
             cmdw=self.cmd.split()
+
+            ### LEFT OFF HERE: add fdoutput for PASTEBOARD
+
+            # experimental: is this the right place to handle?
+            # are we writing to the pasteboard?
+            # if so, patch the command to run normally and intercept
+            # the output
+            if cmdw[0] == 'pb':
+                pasteboard = True
+                print 'PASTEBOARD'
+                s2=self.cmd[2:].strip()
+                print 's2=:%s:'%s2
+                self.cmd=s2
+            else:
+                pasteboard = False
+
             t0=time.time()
             rc=self.curs.execute(self.cmd)
 
@@ -262,8 +304,11 @@ class OracleCmd(cmd.Cmd):
                 P('%s: %s'%(fn, str(e)))
                 ll=['']
         else:
-            ll=[s]
+            ll=s.strip().split('\n')
         for line in ll:
+            line=line.strip()
+            # TODO: print the line if in non-interactive mode?
+            ####print '--->',line
             self.default0(line)
 
     #-----------------------------------------------------------------------
@@ -435,10 +480,22 @@ class OracleCmd(cmd.Cmd):
             self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
+    def do_pb(self,s):
+        """experimental: execute a command and put results on clipboard"""
+        print 's=:%s:'%s
+        self.default('pb '+s)
+
+    #-------------------------------------------------------------------
     def do_select(self,s):
         """query: select ..."""
         # this is so help will work
         self.default('select '+s)
+
+    #-------------------------------------------------------------------
+    def do_with(self,s):
+        """query: with ..."""
+        # this is so help will work
+        self.default('with '+s)
 
     #-------------------------------------------------------------------
     def do_insert(self,s):
@@ -590,6 +647,11 @@ class OracleCmd(cmd.Cmd):
         P(note)
 
     #-------------------------------------------------------------------
+    def do_shell(self,s):
+        """sqlminus: run a shell command"""
+        os.system(s)
+
+    #-------------------------------------------------------------------
     def do_help(self,s):
         """sqlminus: print some help stuff"""
         s=s.strip(';')
@@ -611,6 +673,7 @@ class OracleCmd(cmd.Cmd):
             categories=collections.defaultdict(list)
 
             for f in funclist:
+                print 'f=',f
                 hh=OracleCmd.__dict__['do_'+f].__doc__.split(':')
                 categories[hh[0]].append(f)
                 helptext[f]=hh[1].strip()
@@ -625,12 +688,21 @@ class OracleCmd(cmd.Cmd):
                     P('    %*s : %s'%(mxlen,f,helptext[f]))
 
     #-------------------------------------------------------------------
+    def do_print(self,s):
+        """sqlminus: echo the given line"""
+        P(s)
+
+    #-------------------------------------------------------------------
     def do_tables(self,s):
         """query: print a list of the tables"""
         s=s.strip(';')
         a=s.split()
         # TODO: add wildcard parm, allow schema.
         t=self.ltabs()
+        ## BUG: if n < number of columns, code will break.
+        ## this line is a quick workaround
+        if len(t) < 10:
+            for zz in range(10): t.append('')
         n=len(t)
         mx=0
         for i in t:
@@ -681,6 +753,14 @@ class OracleCmd(cmd.Cmd):
         """
         self.curs.execute(q)
         self.oraprint(self.curs.description,self.curs.fetchall())
+
+    #-------------------------------------------------------------------
+    def do_bug(self,s):
+        """sqlminus: open an issue report"""
+        #TODO: figure out for non-mac
+        P('taking you to issue page:')
+        P('https://github.com/marhar/sqlminus/issues/new')
+        os.system('open https://github.com/marhar/sqlminus/issues/new')
 
     #-------------------------------------------------------------------
     def do_info(self,s):
@@ -869,13 +949,14 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_EOF(self,s):
         """INTERNAL: quit"""
+        P('')
         sys.exit(0);
 
     #-------------------------------------------------------------------
     def do_quit(self,s):
         """sqlminus: quit the program"""
         # this could be 'do_quit = do_EOF' but it messes up help.
-        sys.exit(0);
+        self.do_EOF('')
 
     #-------------------------------------------------------------------
     def do_ctls(self,s):
@@ -924,28 +1005,46 @@ class OracleCmd(cmd.Cmd):
         self.oraprint(self.curs.description,self.curs.fetchall())
 
     #-------------------------------------------------------------------
+    def do_job(self,s):
+        """devel: describe a dbms_job or dbms_scheduler job"""
+        a=s.strip(';').split()
+        if len(a) != 1:
+            P('    usage: job jobname')
+            return
+        jobid = a[0]
+        # TODO: add dba_jobs
+        # TODO: add more detail
+        # TODO: format by line
+        P('job: %s'%(jobid))
+        self.curs.execute("""
+          select owner, job_name job, job_class class, enabled
+            from dba_scheduler_jobs
+           where job_name = :1
+        """, [jobid])
+        self.oraprint(self.curs.description,self.curs.fetchall())
+
+    #-------------------------------------------------------------------
     def do_jobs(self,s):
         """devel: list dbms_jobs and dbms_scheduler jobs"""
         s=s.strip(';')
         P('dbms_jobs:')
         self.curs.execute("""
-            select job, schema_user schema, instance inst, broken,
+            select job, broken,
                    substr(what,1,50) dbms_job,
                    --case when length(dbms_job) < 30 or dbms_job is null
                    --    then dbms_job
                    --    else substr(dbms_job,1,30)||'...' end as text,
                    substr(interval,1,25) interval
               from sys.dba_jobs
-          order by schema,instance
+              where schema_user = sys_context('USERENV','CURRENT_SCHEMA')
+          order by job
         """)
         self.oraprint(self.curs.description,self.curs.fetchall())
         P('')
         P('dbms_scheduler:')
         self.curs.execute("""
-            select job_name job,job_type type,
+            select job_name job,
                 state,enabled,failure_count fails,
-                substr(trunc(next_run_date,'MI'),1,15) as last,
-                nvl(instance_id, 0) as inst,
                 repeat_interval,
                 case when length(job_action) < 30 or job_action is null
                     then job_action
@@ -975,9 +1074,9 @@ class OracleCmd(cmd.Cmd):
     #-------------------------------------------------------------------
     def do_exec(self,s):
         """query: execute a procedure, e.g. exec dbms_lock.sleep(3)"""
-        s=s.strip(';')
-        if len(s.split()) != 1:
-            P('    usage: exec procedure-name')
+        a = s.split(' ')
+        if len(a) < 1 or a[0] == '':
+            P('    usage: exec procedure...')
         else:
             # TODO: should this be curs.execute instead?
             self.cmd = 'begin %s; end;;'%(s.rstrip('; '))
@@ -1131,7 +1230,7 @@ class OracleCmd(cmd.Cmd):
         fd.close()
         os.unlink(edfile)
         self.cmd=self.cmd.strip()
-        self.do_p(s)
+        self.p(s)
         if self.cmd.endswith(';'):
             self.run()
 
@@ -1197,17 +1296,18 @@ def main():
        just be nice to everyone and always smile.
          -- Ed Sheeran
     """
-    P('--------------------------------------------------')
-    P('| Welcome to sqlminus                  build<20> |')
-    P('| docs: https://github.com/marhar/sqlminus       |')
-    P('| type "help" for help                           |')
-    P('--------------------------------------------------')
     parser=argparse.ArgumentParser()
     #parser.add_argument('-f',"--file",help="input sql file")
     parser.add_argument('--sysdba',action='store_true',help="login as sysdba")
     parser.add_argument('--quiet','-q',action='store_true',help="quiet output")
     args,items=parser.parse_known_args()
-    global print_is_quiet; print_is_quiet = args.quiet
+
+    if args.quiet is False:
+        P('--------------------------------------------------')
+        P('| Welcome to sqlminus                  build<26> |')
+        P('| docs: https://github.com/marhar/sqlminus       |')
+        P('| type "help" for help                           |')
+        P('--------------------------------------------------')
 
     if len(items) < 1:
         P('    usage: sqlminus connstr')
@@ -1222,7 +1322,8 @@ def main():
     # we get an ORA-1017 or ORA-1262 (both of which could indicate
     # a bad password we'll prompt for the password and try again.
 
-    P('connecting to %s...'%(connstr2))
+    if args.quiet is False:
+        P('connecting to %s...'%(connstr2))
     try:
         cc=OracleCmd(connstr,args.sysdba)
     except cx_Oracle.DatabaseError,e:
@@ -1245,10 +1346,16 @@ def main():
         # if there's a paren in the connect string, truncate to name@
         atpos=cc.connstr2.find('@')
         papos=cc.connstr2.find('(')
+        pdpos=cc.connstr2.find('.')
         if papos > -1 and atpos > -1:
             cc.do_prompt(items[0][:atpos+1])
         else:
-            cc.do_prompt(cc.connstr2)
+            # experimental: make shorter name for prompt
+            # hack: works for lcdev
+            if len(cc.connstr2) > 12 and pdpos > 0:
+                cc.do_prompt(cc.connstr2[:pdpos])
+            else:
+                cc.do_prompt(cc.connstr2)
     if len(items) >= 2:
         for aa in items[1:]:
             if aa.startswith('=') or aa.startswith('@'):

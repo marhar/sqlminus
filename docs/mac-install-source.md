@@ -5,6 +5,9 @@ Installing cx_Oracle and sqlminus on MacOS
 - I had problems using pip to install pre-built packages, so this is a
   source build.  Download the free xcode package from Apple to get the compiler.
 - Version numbers may drift; adust accordingly.
+- Most of this should apply to building on linux as well.
+  On linux, ignore the readline steps, as I believe that's part
+  of the standard linux build.
 
 Set Up a Build Area
 ===================

@@ -6,7 +6,13 @@
 TOP=/usr/local/sqlminus    # where cx_Oracle/python is installed
 # TNS_ADMIN=/etc           # handle tnsnames location if necessary
 
-export ORACLE_HOME=$TOP/instantclient_11_2
+if test -d $TOP/instantclient_11_2; then
+    export ORACLE_HOME=$TOP/instantclient_11_2
+fi
+
+if test -d $TOP/instantclient_12_1; then
+    export ORACLE_HOME=$TOP/instantclient_12_1
+fi
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ORACLE_HOME
 export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$ORACLE_HOME

@@ -19,8 +19,13 @@ install:
 	chmod 555      $(TOP)/bin/sqlminus.py
 
 package:
+	rm -f /tmp/$(TARBALL1)
 	rm -f /tmp/$(TARBALL2)
+	tar czf /tmp/$(TARBALL1) $(TOP)/bin/sqlminus $(TOP)/bin/sqlminus.py
 	tar czf /tmp/$(TARBALL2) $(TOP)
+
+uploadw:
+	scp /tmp/$(TARBALL1) /tmp/$(TARBALL2) mhdev:sqlminus
 
 upload1:
 	rm -f /tmp/$(TARBALL1)
